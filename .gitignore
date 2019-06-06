@@ -3,5 +3,6 @@ target
 result
 .*
 bin
+jre
 *.class
 !.gitignore
