@@ -10,6 +10,7 @@ public class Encoder {
 
 	static void encodeFile(File source, File targetDir, int recursionDepth) {
 		if (source.exists()) {
+			Main.sizeInBytes += source.length(); 
 			if (source.length() > 4 * 4000 * 4000) {
 				try {
 					FileInputStream fin = new FileInputStream(source);

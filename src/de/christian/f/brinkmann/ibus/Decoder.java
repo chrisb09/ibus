@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 public class Decoder {
 
 	static File[] decodeFile(File source, File targetDir) {
+		Main.sizeInBytes += source.length();
 		String name = source.getName();
 		String[] parts = name.split(Pattern.quote("."));
 		String packetNr = parts[parts.length - 2];
