@@ -8,34 +8,69 @@ import java.io.IOException;
 
 public class Encoder {
 
+	private static int getMaxDataSize() {
+		if (Crypto.isEncryptionActivated()) {
+			return 4000 * 4000 * 4 - 4; // -4 for aes
+		}
+		return 4000 * 4000 * 4;
+	}
+
+	private static int getMaxDataOffset() {
+		if (Crypto.isEncryptionActivated()) {
+			return -4; // -4 for aes
+		}
+		return 0;
+	}
+
+	private static int getNextAESSize(long totalSize) {
+		if (Crypto.isEncryptionActivated()) {
+			return (int) (16 * (totalSize / 16 + 1));
+		}else {
+			return (int) totalSize;
+		}
+	}
+
 	static void encodeFile(File source, File targetDir, int recursionDepth) {
 		if (source.exists()) {
 			Main.sizeInBytes += source.length();
-			if (source.length() > 4 * 4000 * 4000) {
+			if (source.length() > getMaxDataSize()) {
 				try {
 					FileInputStream fin = new FileInputStream(source);
-					for (int index = 0; index < source.length(); index += 4 * 4000 * 4000) {
+					for (int index = 0; index < source.length(); index += getMaxDataSize()) {
 						byte[] fileContent;
 						int overheadBytes;
 						int size;
-						if (source.length() - index == 4 * 4000 * 4000) {
+						int totalSize = getMaxDataSize();
+						if (source.length() - index == getMaxDataSize()) {
 							size = 4000;
 							overheadBytes = -1;
-						} else if (source.length() - index > 4 * 4000 * 4000) {
+							fileContent = new byte[getMaxDataSize()];
+						} else if (source.length() - index > getMaxDataSize()) {
 							size = 4000;
 							overheadBytes = 0;
+							fileContent = new byte[getMaxDataSize()];
 						} else {
-							size = (int) Math.sqrt((source.length() - index) / 4);
-							if (size * size * 4 < source.length() - index) {
+							totalSize = getNextAESSize(source.length() - index);
+							size = (int) Math.sqrt(totalSize / 4);
+							if (size * size * 4 < totalSize) {
 								size++;
 							}
 							if (size < Main.minSize) {
 								size = Main.minSize;
 							}
-							overheadBytes = (size * size * 4) - (int) (source.length() - index);
+							fileContent = new byte[(int) (source.length() - index)];
+							overheadBytes = (size * size * 4) - (int) (totalSize);
+							index += fileContent.length; // In case 3996-3999
 						}
-						fileContent = new byte[4 * size * size];
 						fin.read(fileContent);
+						byte[] data;
+						if (Crypto.isEncryptionActivated()) {
+							data = Crypto.encrypt(fileContent);
+							System.out.println("Expected: " + getNextAESSize(fileContent.length) + "   got: "
+									+ data.length + " from: " + fileContent.length);
+						} else {
+							data = fileContent;
+						}
 
 						String path = "";
 						File f = source.getParentFile();
@@ -45,7 +80,7 @@ public class Encoder {
 						}
 						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "."
 								+ (overheadBytes) + "." + (index / (4 * 4000 * 4000)));
-						BufferedImage image = ImageCreator.createImage(size, fileContent);
+						BufferedImage image = ImageCreator.createImage(size, data);
 						FileIO.writeImageToPNG(image, t);
 					}
 					fin.close();
@@ -53,18 +88,23 @@ public class Encoder {
 					e.printStackTrace();
 				} catch (IOException e) {
 					e.printStackTrace();
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			} else {
+				
+				//TODO: !!!!
 				byte[] data = FileIO.readFileAsBytes(source);
-				int size = (int) Math.sqrt(data.length / 4);
+				int totalSize = getNextAESSize(data.length);
+				int size = (int) Math.sqrt(totalSize / 4);
 				byte[] dataCopy;
-				if (size * size * 4 < data.length) {
+				if (size * size * 4 < totalSize) {
 					size++;
 				}
 				if (size < Main.minSize) {
 					size = Main.minSize;
 				}
-				if (size * size * 4 == data.length) {
+				if (size * size * 4 == totalSize) {
 					dataCopy = data;
 				} else {
 					dataCopy = new byte[size * size * 4];
