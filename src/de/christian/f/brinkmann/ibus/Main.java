@@ -6,6 +6,7 @@ public class Main {
 
 	static boolean delete = false;
 	static long sizeInBytes = 0l;
+	static int minSize = 256;
 
 	public static void main(String[] args) {
 
@@ -29,6 +30,15 @@ public class Main {
 			return;
 		}
 
+		for (int i=3;i<args.length;i++) {
+			if (args[i].equalsIgnoreCase("--delete")) {
+				delete = true;
+			}
+			if (args[i].toLowerCase().startsWith("--minsize")) {
+				minSize = Integer.parseInt(args[i].substring(9, args[i].length()));
+			}
+		}
+		
 		if (args.length >= 4 && args[3].equalsIgnoreCase("--delete")) {
 			delete = true;
 		}
@@ -52,7 +62,7 @@ public class Main {
 	}
 
 	private static void printHelp() {
-		System.out.println("Parameter: <sourceDir> <targetDir> -encode/-decode [--delete]");
+		System.out.println("Parameter: <sourceDir> <targetDir> -encode/-decode [--delete] [--minSize=X]");
 	}
 
 }

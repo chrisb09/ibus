@@ -29,6 +29,9 @@ public class Encoder {
 							if (size * size * 4 < source.length() - index) {
 								size++;
 							}
+							if (size < Main.minSize) {
+								size = Main.minSize;
+							}
 							overheadBytes = (size * size * 4) - (int) (source.length() - index);
 						}
 						fileContent = new byte[4 * size * size];
@@ -40,8 +43,8 @@ public class Encoder {
 							path = "." + f.getName() + path;
 							f = f.getParentFile();
 						}
-						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (overheadBytes) + "."
-								+ (index / (4 * 4000 * 4000)));
+						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "."
+								+ (overheadBytes) + "." + (index / (4 * 4000 * 4000)));
 						BufferedImage image = ImageCreator.createImage(size, fileContent);
 						FileIO.writeImageToPNG(image, t);
 					}
@@ -57,12 +60,17 @@ public class Encoder {
 				byte[] dataCopy;
 				if (size * size * 4 < data.length) {
 					size++;
+				}
+				if (size < Main.minSize) {
+					size = Main.minSize;
+				}
+				if (size * size * 4 == data.length) {
+					dataCopy = data;
+				} else {
 					dataCopy = new byte[size * size * 4];
 					for (int i = 0; i < data.length; i++) {
 						dataCopy[i] = data[i];
 					}
-				} else {
-					dataCopy = data;
 				}
 				String path = "";
 				File f = source.getParentFile();
@@ -70,7 +78,8 @@ public class Encoder {
 					path = "." + f.getName() + path;
 					f = f.getParentFile();
 				}
-				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + ((size * size * 4) - data.length) + "._");
+				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "."
+						+ ((size * size * 4) - data.length) + "._");
 				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}

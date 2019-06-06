@@ -16,6 +16,7 @@ encodes all files in the source directory and stores the images in the target di
 
 decodes all files in the source directory and stores the decoded files in the target directory.
 An additional parameter `--delete` results in all source files being deleted after they are encoded or decoded.
+Use `--minsize=x` to force images to have dimensions of at least x times x. Default is minsize=256.
 
 **:warning: Do not use --delete unless you know what you are doing!**
 
