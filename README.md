@@ -32,4 +32,4 @@ encodes all files in the source directory and stores the images in the target di
 decodes all files in the source directory and stores the decoded files in the target directory.
 An additional parameter `--delete` results in all source files being deleted after they are encoded or decoded.
 
-**:warning: Do NOT use --delete unless you know what you are doing! **
+**:warning: Do NOT use --delete unless you know what you are doing!**
