@@ -32,4 +32,11 @@ encodes all files in the source directory and stores the images in the target di
 decodes all files in the source directory and stores the decoded files in the target directory.
 An additional parameter `--delete` results in all source files being deleted after they are encoded or decoded.
 
-**:warning: Do NOT use --delete unless you know what you are doing!**
+**:warning: Do not use --delete unless you know what you are doing!**
+
+## Further information:
+
+Images have a maximal size of 4000x4000. With ARGB colors every image can store at most 64MByte. Larger files are split up in parts.
+Folder structures in the original files are not present in the image representation, however they are restored at the decoding step.
+
+The used format should result in no data loss when using certain image based cloud solutions.
