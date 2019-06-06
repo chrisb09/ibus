@@ -88,11 +88,14 @@ public class Encoder {
 			for (File f : currentDir.listFiles()) {
 				if (f.isDirectory()) {
 					encodeDirectory(f, targetDir, depth + 1);
-					// TODO: Delete f
+					if (Main.delete) {
+						f.delete();
+					}
 				} else {
 					encodeFile(f, targetDir, depth);
-					System.out.println(f.getPath());
-					// TODO: Delete f
+					if (Main.delete) {
+						f.delete();
+					}
 				}
 			}
 		}

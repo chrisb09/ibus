@@ -115,7 +115,12 @@ public class Decoder {
 			for (File f : sourceDir.listFiles()) {
 				if (f.isDirectory() == false) {
 					try {
-						decodeFile(f, targetDir);
+						File[] files = decodeFile(f, targetDir);
+						if (Main.delete) {
+							for (File file : files) {
+								file.delete();
+							}
+						}
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
