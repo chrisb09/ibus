@@ -38,13 +38,17 @@ public class Main {
 		if (mode == 1) {
 			Encoder.encodeDirectoryAlpha(new File(source), new File(target));
 		} else if (mode == 2) {
-			Decoder.decodeDirectory(new File("target"), new File("result"));
+			Decoder.decodeDirectory(new File(source), new File(target));
 		}
 
 		System.out.println("Operation completed.");
 		System.out.println("Time: " + ((System.currentTimeMillis() - start) / 1000l) + "s");
 		System.out.println("Data: " + (sizeInBytes / 1000000l) + "Mbyte");
-		System.out.println("Rate: " + ((sizeInBytes * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l)) + " Mbit/s");
+		System.out
+				.println("Rate: "
+						+ (((System.currentTimeMillis() - start) / 1000l) != 0 ? ((sizeInBytes * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l))
+								+ " Mbit/s"
+								: "-"));
 	}
 
 	private static void printHelp() {

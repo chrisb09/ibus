@@ -10,7 +10,7 @@ public class Encoder {
 
 	static void encodeFile(File source, File targetDir, int recursionDepth) {
 		if (source.exists()) {
-			Main.sizeInBytes += source.length(); 
+			Main.sizeInBytes += source.length();
 			if (source.length() > 4 * 4000 * 4000) {
 				try {
 					FileInputStream fin = new FileInputStream(source);
@@ -74,21 +74,24 @@ public class Encoder {
 				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}
+		} else {
+			System.out.println("Doesn't exist: " + source.getAbsolutePath());
 		}
 	}
 
 	static void encodeDirectoryAlpha(File sourceDir, File targetDir) {
-		encodeDirectoryAlpha(sourceDir, targetDir, 0);
+		encodeDirectory(sourceDir, targetDir, 0);
 	}
 
-	private static void encodeDirectoryAlpha(File currentDir, File targetDir, int depth) {
+	private static void encodeDirectory(File currentDir, File targetDir, int depth) {
 		if (currentDir.exists()) {
 			for (File f : currentDir.listFiles()) {
 				if (f.isDirectory()) {
-					encodeDirectoryAlpha(f, targetDir, depth + 1);
+					encodeDirectory(f, targetDir, depth + 1);
 					// TODO: Delete f
 				} else {
 					encodeFile(f, targetDir, depth);
+					System.out.println(f.getPath());
 					// TODO: Delete f
 				}
 			}
