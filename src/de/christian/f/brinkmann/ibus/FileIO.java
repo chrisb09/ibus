@@ -6,31 +6,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 
-import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
-import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
-import javax.imageio.stream.FileImageOutputStream;
 
 public class FileIO {
 
-	private static JPEGImageWriteParam jpegParams;
-
-	static {
-		jpegParams = new JPEGImageWriteParam(null);
-		setJPGCompression(1f);
-	}
-	
 	static byte[] readFileAsBytes(File file) {
-        try {
+		try {
 			return Files.readAllBytes(file.toPath());
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
 		}
 	}
-	
+
 	static boolean writeFileAsBytes(File file, byte[] data) {
 		try {
 			Files.write(file.toPath(), data, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -40,7 +28,7 @@ public class FileIO {
 			return false;
 		}
 	}
-	
+
 	static boolean appendFileAsBytes(File file, byte[] data) {
 		try {
 			Files.write(file.toPath(), data, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
@@ -58,27 +46,6 @@ public class FileIO {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	static void writeImageToJPG(RenderedImage image, File file) {
-		File f = new File(file.getAbsolutePath() + ".jpg");
-		final ImageWriter writer = ImageIO.getImageWritersByFormatName("jpg").next();
-		try {
-			writer.setOutput(new FileImageOutputStream(f));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		try {
-			writer.write(null, new IIOImage(image, null, null), jpegParams);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private static void setJPGCompression(float compression) {
-		jpegParams.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-		jpegParams.setCompressionQuality(1f);
 	}
 
 }

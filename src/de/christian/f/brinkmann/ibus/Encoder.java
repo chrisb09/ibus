@@ -8,30 +8,7 @@ import java.io.IOException;
 
 public class Encoder {
 
-	static void encodeFile(File source, File targetDir) {
-		if (source.exists()) {
-			if (source.length() > 3 * 4000 * 4000) {
-				System.out.println("Huge file");
-			} else {
-				byte[] data = FileIO.readFileAsBytes(source);
-				int size = (int) Math.sqrt(data.length / 3);
-				if (size * size * 3 < data.length)
-					size++;
-				byte[] dataCopy = new byte[size * size * 3];
-				for (int i = 0; i < data.length; i++) {
-					dataCopy[i] = data[i];
-				}
-				File t = new File(targetDir, source.getName() + "." + ((size * size * 3) - data.length) + "._");
-				System.out.println("t: " + t.getAbsolutePath());
-				BufferedImage image = ImageCreator.createImage(size, dataCopy);
-				FileIO.writeImageToPNG(image, t);
-			}
-		} else {
-			System.out.println("No file: " + source.getAbsolutePath() + "@" + source.length());
-		}
-	}
-
-	static void encodeFileAlpha(File source, File targetDir, int recursionDepth) {
+	static void encodeFile(File source, File targetDir, int recursionDepth) {
 		if (source.exists()) {
 			if (source.length() > 4 * 4000 * 4000) {
 				try {
@@ -43,7 +20,7 @@ public class Encoder {
 						if (source.length() - index == 4 * 4000 * 4000) {
 							size = 4000;
 							overheadBytes = -1;
-						}else if (source.length() - index > 4 * 4000 * 4000) {
+						} else if (source.length() - index > 4 * 4000 * 4000) {
 							size = 4000;
 							overheadBytes = 0;
 						} else {
@@ -51,7 +28,7 @@ public class Encoder {
 							if (size * size * 4 < source.length() - index) {
 								size++;
 							}
-							overheadBytes = (size*size*4) - (int) (source.length() - index);
+							overheadBytes = (size * size * 4) - (int) (source.length() - index);
 						}
 						fileContent = new byte[4 * size * size];
 						fin.read(fileContent);
@@ -62,16 +39,15 @@ public class Encoder {
 							path = "." + f.getName() + path;
 							f = f.getParentFile();
 						}
-						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (overheadBytes)
-								+ "." + (index / (4 * 4000 * 4000)));
-						BufferedImage image = ImageCreator.createImageAlpha(size, fileContent);
+						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (overheadBytes) + "."
+								+ (index / (4 * 4000 * 4000)));
+						BufferedImage image = ImageCreator.createImage(size, fileContent);
 						FileIO.writeImageToPNG(image, t);
 					}
 					fin.close();
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			} else {
@@ -94,11 +70,9 @@ public class Encoder {
 					f = f.getParentFile();
 				}
 				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + ((size * size * 4) - data.length) + "._");
-				BufferedImage image = ImageCreator.createImageAlpha(size, dataCopy);
+				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}
-		} else {
-			System.out.println("No file: " + source.getAbsolutePath() + "@" + source.length());
 		}
 	}
 
@@ -113,7 +87,7 @@ public class Encoder {
 					encodeDirectoryAlpha(f, targetDir, depth + 1);
 					// TODO: Delete f
 				} else {
-					encodeFileAlpha(f, targetDir, depth);
+					encodeFile(f, targetDir, depth);
 					// TODO: Delete f
 				}
 			}

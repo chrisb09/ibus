@@ -8,41 +8,7 @@ import javax.imageio.ImageIO;
 
 public class Decoder {
 
-	// enc256_copy.png.41._.png
-
-	static void decodeFile(File source, File targetDir) {
-		String name = source.getName();
-		String[] parts = name.split(Pattern.quote("."));
-		String packetNr = parts[parts.length - 2];
-		String emptyBits = parts[parts.length - 3];
-		String origName = "";
-		for (int i = 0; i < parts.length - 3; i++) {
-			if (i == 0) {
-				origName = parts[i];
-			} else {
-				origName += "." + parts[i];
-			}
-		}
-		int emptyB = Integer.parseInt(emptyBits);
-		if (packetNr.equals("_")) {
-			// One packet
-			try {
-				byte[] data = ImageReader.readImage(ImageIO.read(source));
-				byte[] dataCopy = new byte[data.length - emptyB];
-				for (int i = 0; i < dataCopy.length; i++) {
-					dataCopy[i] = data[i];
-				}
-				File t = new File(targetDir, origName);
-				FileIO.writeFileAsBytes(t, dataCopy);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} else {
-			// Multiple packets
-		}
-	}
-
-	static File[] decodeFileAlpha(File source, File targetDir) {
+	static File[] decodeFile(File source, File targetDir) {
 		String name = source.getName();
 		String[] parts = name.split(Pattern.quote("."));
 		String packetNr = parts[parts.length - 2];
@@ -75,7 +41,7 @@ public class Decoder {
 		if (packetNr.equals("_")) {
 			// One packet
 			try {
-				byte[] data = ImageReader.readImageAlpha(ImageIO.read(source));
+				byte[] data = ImageReader.readImage(ImageIO.read(source));
 				byte[] dataCopy = new byte[data.length - emptyB];
 				for (int i = 0; i < dataCopy.length; i++) {
 					dataCopy[i] = data[i];
@@ -101,7 +67,7 @@ public class Decoder {
 				try {
 					File t = new File(targetPath, origName);
 					for (int i = 0; i < files.length; i++) {
-						byte[] data = ImageReader.readImageAlpha(ImageIO.read(files[i]));
+						byte[] data = ImageReader.readImage(ImageIO.read(files[i]));
 						byte[] dataCopy;
 						if (i != files.length - 1) {
 							dataCopy = data;
@@ -143,12 +109,12 @@ public class Decoder {
 		return f;
 	}
 
-	static void decodeDirectoryAlpha(File sourceDir, File targetDir) {
+	static void decodeDirectory(File sourceDir, File targetDir) {
 		if (sourceDir.exists()) {
 			for (File f : sourceDir.listFiles()) {
 				if (f.isDirectory() == false) {
 					try {
-						decodeFileAlpha(f, targetDir);
+						decodeFile(f, targetDir);
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
