@@ -15,17 +15,10 @@ public class Encoder {
 		return 4000 * 4000 * 4;
 	}
 
-	private static int getMaxDataOffset() {
-		if (Crypto.isEncryptionActivated()) {
-			return -4; // -4 for aes
-		}
-		return 0;
-	}
-
 	private static int getNextAESSize(long totalSize) {
 		if (Crypto.isEncryptionActivated()) {
 			return (int) (16 * (totalSize / 16 + 1));
-		}else {
+		} else {
 			return (int) totalSize;
 		}
 	}
@@ -66,8 +59,10 @@ public class Encoder {
 						byte[] data;
 						if (Crypto.isEncryptionActivated()) {
 							data = Crypto.encrypt(fileContent);
-							System.out.println("Expected: " + getNextAESSize(fileContent.length) + "   got: "
-									+ data.length + " from: " + fileContent.length);
+							// System.out.println("Expected: " +
+							// getNextAESSize(fileContent.length) + "   got: " +
+							// data.length + " from: "
+							// + fileContent.length);
 						} else {
 							data = fileContent;
 						}
@@ -78,8 +73,8 @@ public class Encoder {
 							path = "." + f.getName() + path;
 							f = f.getParentFile();
 						}
-						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "."
-								+ (overheadBytes) + "." + (index / (4 * 4000 * 4000)));
+						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (overheadBytes) + "."
+								+ (index / (4 * 4000 * 4000)));
 						BufferedImage image = ImageCreator.createImage(size, data);
 						FileIO.writeImageToPNG(image, t);
 					}
@@ -92,10 +87,20 @@ public class Encoder {
 					e.printStackTrace();
 				}
 			} else {
-				
-				//TODO: !!!!
+
+				// TODO: !!!!
 				byte[] data = FileIO.readFileAsBytes(source);
-				int totalSize = getNextAESSize(data.length);
+				byte[] encrypted = null;
+				if (Crypto.isEncryptionActivated()) {
+					try {
+						encrypted = Crypto.encrypt(data);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				} else {
+					encrypted = data;
+				}
+				int totalSize = encrypted.length;
 				int size = (int) Math.sqrt(totalSize / 4);
 				byte[] dataCopy;
 				if (size * size * 4 < totalSize) {
@@ -105,11 +110,11 @@ public class Encoder {
 					size = Main.minSize;
 				}
 				if (size * size * 4 == totalSize) {
-					dataCopy = data;
+					dataCopy = encrypted;
 				} else {
 					dataCopy = new byte[size * size * 4];
-					for (int i = 0; i < data.length; i++) {
-						dataCopy[i] = data[i];
+					for (int i = 0; i < encrypted.length; i++) {
+						dataCopy[i] = encrypted[i];
 					}
 				}
 				String path = "";
@@ -118,8 +123,7 @@ public class Encoder {
 					path = "." + f.getName() + path;
 					f = f.getParentFile();
 				}
-				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "."
-						+ ((size * size * 4) - data.length) + "._");
+				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + ((size * size * 4) - encrypted.length) + "._");
 				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}
