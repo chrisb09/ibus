@@ -41,6 +41,12 @@ public class Main {
 			if (args[i].toLowerCase().startsWith("--key")) {
 				setKey(args[i].substring(5, args[i].length()));
 			}
+			if (args[i].equals("--cleartarget")) {
+				System.out.println("Clearing target folder: " + new File(target).getAbsolutePath());
+				for (File f : new File(target).listFiles()) {
+					f.delete();
+				}
+			}
 		}
 
 		long start = System.currentTimeMillis();
@@ -54,13 +60,15 @@ public class Main {
 		System.out.println("Operation completed.");
 		System.out.println("Time: " + ((System.currentTimeMillis() - start) / 1000l) + "s");
 		System.out.println("Data: " + (sizeInBytes / 1000000l) + "Mbyte");
-		System.out.println("Rate: " + (((System.currentTimeMillis() - start) / 1000l) != 0
-				? ((sizeInBytes * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l)) + " Mbit/s"
-				: "-"));
+		System.out
+				.println("Rate: "
+						+ (((System.currentTimeMillis() - start) / 1000l) != 0 ? ((sizeInBytes * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l))
+								+ " Mbit/s"
+								: "-"));
 	}
 
 	private static void printHelp() {
-		System.out.println("Parameter: <sourceDir> <targetDir> -encode/-decode [--delete] [--minSize=X] [--key=Y]");
+		System.out.println("Parameter: <sourceDir> <targetDir> -encode/-decode [--delete] [--minSize=X] [--key=Y] [--cleartarget]");
 		System.out.println(" where X is an Integer and Y is a password");
 	}
 
@@ -76,17 +84,17 @@ public class Main {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private static void testAES() {
 		setKey("test");
-		byte[] k = new byte[4000*4000*4-4];
+		byte[] k = new byte[4000 * 4000 * 4 - 4];
 		byte[] c = new byte[0];
 		try {
 			c = Crypto.encrypt(k);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		System.out.println(c.length+" -> "+k.length + " ("+(c.length-k.length)+")");
+		System.out.println(c.length + " -> " + k.length + " (" + (c.length - k.length) + ")");
 	}
 
 }
