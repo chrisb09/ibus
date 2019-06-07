@@ -43,9 +43,7 @@ public class Main {
 			}
 			if (args[i].equals("--cleartarget")) {
 				System.out.println("Clearing target folder: " + new File(target).getAbsolutePath());
-				for (File f : new File(target).listFiles()) {
-					f.delete();
-				}
+				deleteDir(new File(target));
 			}
 		}
 
@@ -65,6 +63,15 @@ public class Main {
 						+ (((System.currentTimeMillis() - start) / 1000l) != 0 ? ((sizeInBytes * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l))
 								+ " Mbit/s"
 								: "-"));
+	}
+
+	private static void deleteDir(File file) {
+		for (File f : file.listFiles()) {
+			if (f.isDirectory()) {
+				deleteDir(f);
+			}
+			f.delete();
+		}
 	}
 
 	private static void printHelp() {
