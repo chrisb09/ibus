@@ -32,16 +32,19 @@ public class Encoder {
 					for (int index = 0; index < source.length(); index += getMaxDataSize()) {
 						byte[] fileContent;
 						int overheadBytes;
+						int paddingBytes;
 						int size;
 						int totalSize = getMaxDataSize();
 						if (source.length() - index == getMaxDataSize()) {
 							size = 4000;
 							overheadBytes = -1;
 							fileContent = new byte[getMaxDataSize()];
+							paddingBytes = 4000 * 4000 * 4 - getMaxDataSize();
 						} else if (source.length() - index > getMaxDataSize()) {
 							size = 4000;
 							overheadBytes = 0;
 							fileContent = new byte[getMaxDataSize()];
+							paddingBytes = 4000 * 4000 * 4 - getMaxDataSize();
 						} else {
 							totalSize = getNextAESSize(source.length() - index);
 							size = (int) Math.sqrt(totalSize / 4);
@@ -53,6 +56,7 @@ public class Encoder {
 							}
 							fileContent = new byte[(int) (source.length() - index)];
 							overheadBytes = (size * size * 4) - (int) (totalSize);
+							paddingBytes = totalSize - fileContent.length;
 							index += fileContent.length; // In case 3996-3999
 						}
 						fin.read(fileContent);
@@ -73,8 +77,8 @@ public class Encoder {
 							path = "." + f.getName() + path;
 							f = f.getParentFile();
 						}
-						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (overheadBytes) + "."
-								+ (index / (4 * 4000 * 4000)));
+						File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (paddingBytes) + "." + (overheadBytes)
+								+ "." + (index / (4 * 4000 * 4000)));
 						BufferedImage image = ImageCreator.createImage(size, data);
 						FileIO.writeImageToPNG(image, t);
 					}
@@ -117,13 +121,15 @@ public class Encoder {
 						dataCopy[i] = encrypted[i];
 					}
 				}
+				int paddingBytes = encrypted.length - data.length;
 				String path = "";
 				File f = source.getParentFile();
 				for (int i = 0; i < recursionDepth; i++) {
 					path = "." + f.getName() + path;
 					f = f.getParentFile();
 				}
-				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + ((size * size * 4) - encrypted.length) + "._");
+				File t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + paddingBytes + "."
+						+ ((size * size * 4) - encrypted.length) + "._");
 				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}

@@ -13,12 +13,13 @@ public class Decoder {
 		String name = source.getName();
 		String[] parts = name.split(Pattern.quote("."));
 		String packetNr = parts[parts.length - 2];
-		String emptyBits = parts[parts.length - 3];
-		String recursionDepthString = parts[parts.length - 4];
+		String emptyBytes = parts[parts.length - 3];
+		String paddingByteString = parts[parts.length - 4];
+		String recursionDepthString = parts[parts.length - 5];
 		int recursionDepth = Integer.parseInt(recursionDepthString);
 		String[] paths = new String[recursionDepth];
 		for (int i = 0; i < recursionDepth; i++) {
-			paths[i] = parts[parts.length - (4 + recursionDepth - i)];
+			paths[i] = parts[parts.length - (5 + recursionDepth - i)];
 		}
 		File targetPath = targetDir;
 		if (!targetPath.exists()) {
@@ -31,14 +32,15 @@ public class Decoder {
 			}
 		}
 		String origName = "";
-		for (int i = 0; i < parts.length - (recursionDepth + 4); i++) {
+		for (int i = 0; i < parts.length - (recursionDepth + 5); i++) {
 			if (i == 0) {
 				origName = parts[i];
 			} else {
 				origName += "." + parts[i];
 			}
 		}
-		int emptyB = Integer.parseInt(emptyBits);
+		int emptyB = Integer.parseInt(emptyBytes);
+		int paddingBytes = Integer.parseInt(paddingByteString);
 		if (packetNr.equals("_")) {
 			// One packet
 			try {
@@ -46,6 +48,19 @@ public class Decoder {
 				byte[] dataCopy = new byte[data.length - emptyB];
 				for (int i = 0; i < dataCopy.length; i++) {
 					dataCopy[i] = data[i];
+				}
+				if (Crypto.isEncryptionActivated()) {
+					try {
+						dataCopy = Crypto.decrypt(dataCopy);
+						if (paddingBytes != 0) {
+							byte[] n = new byte[dataCopy.length - paddingBytes];
+							for (int i = 0; i < dataCopy.length - paddingBytes; i++) {
+								n[i] = dataCopy[i];
+							}
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 				}
 				File t = new File(targetPath, origName);
 				FileIO.writeFileAsBytes(t, dataCopy);
@@ -68,6 +83,17 @@ public class Decoder {
 				try {
 					File t = new File(targetPath, origName);
 					for (int i = 0; i < files.length; i++) {
+						if (files[i].exists() == false) {
+							if (Crypto.isEncryptionActivated()) {
+								System.out
+										.println("ERROR! Linking of splitted files not possible. Is it possible that you are trying to decrypt unencrypted files?");
+								System.out.println("Please remove --key=X parameter.");
+							} else {
+								System.out
+										.println("ERROR! Linking of splitted files not possible. Is it possible that you are trying to decode encrypted files without using a decryption key?");
+								System.out.println("Please add --key=X parameter.");
+							}
+						}
 						byte[] data = ImageReader.readImage(ImageIO.read(files[i]));
 						byte[] dataCopy;
 						if (i != files.length - 1) {
@@ -78,11 +104,28 @@ public class Decoder {
 								ignoreBytes = 0;
 							}
 							dataCopy = new byte[data.length - ignoreBytes];
+							for (int j = 0; j < dataCopy.length; j++) {
+								dataCopy[j] = data[j];
+							}
+						}
+						if (Crypto.isEncryptionActivated()) {
+							try {
+								dataCopy = Crypto.decrypt(dataCopy);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+						if (paddingBytes != 0) {
+							byte[] n = new byte[dataCopy.length - paddingBytes];
+							for (int j = 0; j < dataCopy.length - paddingBytes; j++) {
+								n[j] = dataCopy[j];
+							}
 						}
 						FileIO.appendFileAsBytes(t, dataCopy);
 					}
 					return files;
 				} catch (IOException e) {
+					;
 					e.printStackTrace();
 					return null;
 				}
@@ -102,6 +145,12 @@ public class Decoder {
 				s += "." + nr;
 			} else if (i == parts.length - 3) {
 				s += ".0";
+			} else if (i == parts.length - 4) {
+				if (Crypto.isEncryptionActivated()) {
+					s += ".4";
+				} else {
+					s += ".0";
+				}
 			} else {
 				s += "." + parts[i];
 			}
@@ -116,7 +165,7 @@ public class Decoder {
 				if (f.isDirectory() == false) {
 					try {
 						File[] files = decodeFile(f, targetDir);
-						if (Main.delete) {
+						if (Main.delete && files != null) {
 							for (File file : files) {
 								file.delete();
 							}
