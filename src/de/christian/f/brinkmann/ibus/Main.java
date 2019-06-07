@@ -13,7 +13,6 @@ public class Main {
 		int mode = 0; // 1 encode, 2 decode
 
 		if (args.length < 3) {
-			testAES();
 			printHelp();
 			return;
 		}
@@ -39,7 +38,7 @@ public class Main {
 				minSize = Integer.parseInt(args[i].substring(9, args[i].length()));
 			}
 			if (args[i].toLowerCase().startsWith("--key")) {
-				setKey(args[i].substring(5, args[i].length()));
+				setKey(args[i].substring(6, args[i].length()));
 			}
 			if (args[i].equals("--cleartarget")) {
 				System.out.println("Clearing target folder: " + new File(target).getAbsolutePath());
@@ -80,6 +79,7 @@ public class Main {
 	}
 
 	private static void setKey(String key) {
+		System.out.println("Using AES-" + (key.length() * 8) + "-bit key");
 		byte[] k = key.getBytes();
 		byte[] n = new byte[16];
 		for (int i = 0; i < Math.min(k.length, n.length); i++) {
@@ -91,17 +91,4 @@ public class Main {
 			e.printStackTrace();
 		}
 	}
-
-	private static void testAES() {
-		setKey("test");
-		byte[] k = new byte[4000 * 4000 * 4 - 4];
-		byte[] c = new byte[0];
-		try {
-			c = Crypto.encrypt(k);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		System.out.println(c.length + " -> " + k.length + " (" + (c.length - k.length) + ")");
-	}
-
 }
