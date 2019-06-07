@@ -4,7 +4,7 @@ Encode your files in images, decode images to your files
 
 ## Download 
 
-Download [Ibus.jar](download/) for every system with a working installation of Java 7 or above.
+Download [Ibus.jar](download/) for every system with a working installation of Java 8 or above.
 
 ## Use
 
