@@ -7,6 +7,8 @@ public class Main {
 	static boolean delete = false;
 	static long sizeInBytes = 0l;
 	static int minSize = 256;
+	static boolean indexing = true;
+	static boolean debug = false;
 
 	public static void main(String[] args) {
 
@@ -37,6 +39,9 @@ public class Main {
 			if (args[i].toLowerCase().startsWith("--minsize")) {
 				minSize = Integer.parseInt(args[i].substring(9, args[i].length()));
 			}
+			if (args[i].toLowerCase().startsWith("--debug")) {
+				debug = true;
+			}
 			if (args[i].toLowerCase().startsWith("--key")) {
 				setKey(args[i].substring(6, args[i].length()));
 			}
@@ -44,6 +49,14 @@ public class Main {
 				System.out.println("Clearing target folder: " + new File(target).getAbsolutePath());
 				deleteDir(new File(target));
 			}
+			if (args[i].equals("--no-index")) {
+				System.out.println("Using no indexing system");
+				indexing = false;
+			}
+		}
+
+		if (indexing) {
+			System.out.println("Using indexing system.");
 		}
 
 		long start = System.currentTimeMillis();
@@ -79,7 +92,10 @@ public class Main {
 	}
 
 	private static void setKey(String key) {
-		System.out.println("Using AES-" + (key.length() * 8) + "-bit key");
+		System.out.println("Using AES-" + (Math.min(key.length(), 16) * 8) + "-bit key");
+		if (key.length() > 16) {
+			System.out.println("[Warning] Only the first 16 characters are used for AES-128bit encryption!");
+		}
 		byte[] k = key.getBytes();
 		byte[] n = new byte[16];
 		for (int i = 0; i < Math.min(k.length, n.length); i++) {
