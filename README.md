@@ -20,8 +20,15 @@ Use `--minsize=x` to force images to have dimensions of at least x times x. Defa
 Use `--key=Y` to encrypt/decrypt the data with aes with the given key. Only the first 16 characters can be utilized since the encryption used is aes-128bit.
 Using an incorrect key for decryption may result in errors. Access to your data is lost when you lose your key.
 Use `--cleartarget` to delete all files in the target directory.
+Use  `--no-index` to disable the indexing.
 
-**:warning: Do not use --delete unless you know what you are doing!**
+**:warning: Do not use `--delete` or `--cleartarget` unless you know what you are doing!**
+
+Do make Backups of your data before using this program. I'm not responseable for any data you might lose.
+
+## To-do
+
+- encrypt the folder and file names when using indexing, for the variant without indexing this won't be added
 
 ## Further information:
 
