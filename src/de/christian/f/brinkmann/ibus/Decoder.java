@@ -377,7 +377,6 @@ public class Decoder {
 			if (Crypto.isEncryptionActivated()) {
 				try {
 					name = Crypto.decryptString(name);
-					System.out.println("Name: '" + name + "'");
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -400,7 +399,6 @@ public class Decoder {
 				String entryName = new String(getByteArray(buffer, entryNameLength));
 				if (Crypto.isEncryptionActivated()) {
 					entryName = Crypto.decryptString(entryName);
-					System.out.println("Subname: '"+entryName+"'");
 				}
 				int entryId = buffer.getInt();
 				int entryCollisionCount = buffer.getInt();
