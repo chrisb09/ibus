@@ -28,6 +28,7 @@ Do make Backups of your data before using this program. I'm not responseable for
 
 ## To-do
 
+- output progress and speed as well as addition info
 - add multi core support
 
 ## Further information:

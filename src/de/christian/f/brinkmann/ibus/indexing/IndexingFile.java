@@ -5,12 +5,18 @@ public class IndexingFile extends IndexingEntry {
 	private int hashId;
 	private int collsionCount;
 	private int[] paddingAndOverhead;
+	private long size;
 
-	public IndexingFile(IndexingDir parent, String name, int hashId, int collisionCount, int[] paddingAndOverhead) {
+	public IndexingFile(IndexingDir parent, String name, int hashId, int collisionCount, int[] paddingAndOverhead, long size) {
 		super(parent, name);
 		this.hashId = hashId;
 		this.collsionCount = collisionCount;
 		this.paddingAndOverhead = paddingAndOverhead;
+		this.size = size;
+	}
+	
+	public long getSize() {
+		return size;
 	}
 
 	public int[] getPaddingAndOverhead() {

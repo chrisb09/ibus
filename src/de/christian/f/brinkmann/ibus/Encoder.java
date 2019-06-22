@@ -21,6 +21,7 @@ public class Encoder {
 		// [4 Byte: "x_i" name length]
 		// [x_i Bytes: Name of x_i][4 Byte: Name Hash Int(Java Impl)]
 		// [4 Byte: Name Hash Number/Count (usually 0), but needed for collision, -1 for folder]
+		// [8 Byte: File size]
 		// [4 Byte: amount of file parts, 0 for folder]
 		// [4 Byte: x_j file j padding] [4 Byte: x_j file j overhead]
 		// @formatter:on
@@ -30,7 +31,7 @@ public class Encoder {
 	private static int indexFileindex = 0;
 	static final HashMap<Integer, List<String>> indices = new HashMap<Integer, List<String>>();
 
-	private static int getMaxDataSize() {
+	static int getMaxDataSize() {
 		if (Crypto.isEncryptionActivated()) {
 			return 4000 * 4000 * 4 - 4; // -4 for aes
 		}
@@ -227,7 +228,7 @@ public class Encoder {
 					name = f.getName().getBytes();
 				}
 				
-				byte[] t = new byte[4 + name.length + 4 + 4 + 4];
+				byte[] t = new byte[4 + name.length + 4 + 4 + 8 + 4];
 
 				if (Main.indexing) {
 					entries++;
@@ -242,6 +243,8 @@ public class Encoder {
 						writeIntAt(subIndex, t, 4 + name.length);
 						writeIntAt(-1, t, 8 + name.length);
 						writeIntAt(0, t, 12 + name.length);
+						writeIntAt(0, t, 16 + name.length);
+						writeIntAt(0, t, 20 + name.length);
 					}
 					if (Main.delete) {
 						f.delete();
@@ -251,10 +254,12 @@ public class Encoder {
 					if (Main.indexing) {
 						writeIntAt(f.getName().hashCode(), t, 4 + name.length);
 						writeIntAt(indices.get(f.getName().hashCode()).size() - 1, t, 8 + name.length);
-						writeIntAt(res.length / 2, t, 12 + name.length);
+						writeIntAt((int) (f.length() >>  32), t, 12 + name.length);
+						writeIntAt((int) (f.length() & (0b11111111111111111111111111111111)), t, 16 + name.length);
+						writeIntAt(res.length / 2, t, 20 + name.length);
 						t = append(t, new byte[res.length * 4]);
 						for (int i = 0; i < res.length; i++) {
-							writeIntAt(res[i], t, 16 + name.length + i * 4);
+							writeIntAt(res[i], t, 24 + name.length + i * 4);
 						}
 					}
 				}
@@ -278,7 +283,9 @@ public class Encoder {
 			}
 
 			if (Main.indexing) {
-				System.out.print("Name=" + (depth != 0 ? currentDir.getName() : "") + " ");
+				if (Main.debug) {
+					System.out.print("Name=" + (depth != 0 ? currentDir.getName() : "") + " ");
+				}
 				byte[] n = writeCurrentIndexFile(-1, lastEntryWritten, indiceBytes, header, entries);
 				writeIndexFilex(targetDir, localIndex, n);
 				return firstIndex;

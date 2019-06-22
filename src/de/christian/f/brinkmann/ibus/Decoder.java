@@ -148,7 +148,7 @@ public class Decoder {
 	static File[] decodeFileWithIndexing(File sourceDir, File targetDir, String origName, int hash, int collisionCount, int[] paddingAndOverhead,
 			String... path) {
 		File sourceFile = new File(sourceDir, hash + "." + collisionCount + "." + (paddingAndOverhead.length == 2 ? "_" : "0") + ".png");
-		Main.sizeInBytes += sourceFile.length();
+		Main.sizeInBytes += ((paddingAndOverhead.length / 2) - 1) * Encoder.getMaxDataSize() + sourceFile.length();
 
 		File targetPath = targetDir;
 		if (!targetPath.exists()) {
@@ -342,8 +342,8 @@ public class Decoder {
 		for (IndexingEntry en : dir.getSubFiles()) {
 			if (en instanceof IndexingFile) {
 				IndexingFile f = (IndexingFile) en;
-				text.add(pre + en.getName() + " <" + f.getHashId() + ":" + f.getCollsionCount() + "> " + Arrays.toString(f.getPaddingAndOverhead())
-						+ "");
+				text.add(pre + en.getName() + " <" + f.getHashId() + ":" + f.getCollsionCount() + "> @{" + Tool.readableFileSize(f.getSize())
+						+ "}   " + Arrays.toString(f.getPaddingAndOverhead()) + "");
 			} else if (en instanceof IndexingDir) {
 				IndexingDir d = (IndexingDir) en;
 				text.add(pre + en.getName() + ":");
@@ -403,6 +403,8 @@ public class Decoder {
 				int entryId = buffer.getInt();
 				int entryCollisionCount = buffer.getInt();
 
+				long fileSize = buffer.getLong();
+
 				int amountOfFileParts = buffer.getInt();
 				int[] paddingAndOverhead = new int[2 * amountOfFileParts];
 
@@ -415,7 +417,7 @@ public class Decoder {
 					dir.getSubFiles().add(loadIndexing(sourceDir, entryId, dir, null));
 				} else {
 					// File
-					dir.getSubFiles().add(new IndexingFile(dir, entryName, entryId, entryCollisionCount, paddingAndOverhead));
+					dir.getSubFiles().add(new IndexingFile(dir, entryName, entryId, entryCollisionCount, paddingAndOverhead, fileSize));
 				}
 			}
 

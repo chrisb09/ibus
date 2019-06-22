@@ -57,6 +57,9 @@ public class Main {
 
 		if (indexing) {
 			System.out.println("Using indexing system.");
+			if (!Crypto.isEncryptionActivated()){
+				System.out.println("You should consider encrypting your files using the --key=X parameter.");
+			}
 		}
 
 		long start = System.currentTimeMillis();
