@@ -28,7 +28,7 @@ Do make Backups of your data before using this program. I'm not responseable for
 
 ## To-do
 
-- encrypt the folder and file names when using indexing, for the variant without indexing this won't be added
+- add multi core support
 
 ## Further information:
 

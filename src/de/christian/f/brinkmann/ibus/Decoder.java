@@ -374,6 +374,14 @@ public class Decoder {
 			int amountOfEntries = buffer.getInt();
 			int nameSize = buffer.getInt();
 			String name = new String(getByteArray(buffer, nameSize));
+			if (Crypto.isEncryptionActivated()) {
+				try {
+					name = Crypto.decryptString(name);
+					System.out.println("Name: '" + name + "'");
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
 			int nextIndex = buffer.getInt();
 
 			IndexingDir dir;
@@ -390,6 +398,10 @@ public class Decoder {
 			for (int i = 0; i < amountOfEntries; i++) {
 				int entryNameLength = buffer.getInt();
 				String entryName = new String(getByteArray(buffer, entryNameLength));
+				if (Crypto.isEncryptionActivated()) {
+					entryName = Crypto.decryptString(entryName);
+					System.out.println("Subname: '"+entryName+"'");
+				}
 				int entryId = buffer.getInt();
 				int entryCollisionCount = buffer.getInt();
 
@@ -417,6 +429,9 @@ public class Decoder {
 
 		} catch (IOException ex) {
 			ex.printStackTrace();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return null;
 	}

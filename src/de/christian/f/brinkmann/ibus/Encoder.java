@@ -188,7 +188,13 @@ public class Encoder {
 			// HashMap<String, Integer>();
 
 			byte[] indiceBytes = new byte[0];
-			byte[] a = (depth != 0 ? currentDir.getName() : "").getBytes();
+			byte[] a = null;
+			try {
+				a = (depth != 0 ? (Crypto.isEncryptionActivated() ? Crypto.encryptString(currentDir.getName()) : currentDir.getName()) : "").getBytes();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			byte[] header = new byte[4 + 4 + 4 + a.length];
 			writeIntAt(a.length, header, 8);
 			writeByteArrayAt(a, header, 12);
@@ -208,8 +214,19 @@ public class Encoder {
 					list.add(f.getName());
 					indices.put(hash, list);
 				}
-
-				byte[] name = f.getName().getBytes();
+				
+				byte[] name;
+				if (Crypto.isEncryptionActivated()) {
+					try {
+						name = Crypto.encryptString(f.getName()).getBytes();
+					} catch (Exception e) {
+						name = f.getName().getBytes();
+						e.printStackTrace();
+					}
+				}else{
+					name = f.getName().getBytes();
+				}
+				
 				byte[] t = new byte[4 + name.length + 4 + 4 + 4];
 
 				if (Main.indexing) {
