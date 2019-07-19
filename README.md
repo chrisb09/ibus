@@ -34,8 +34,8 @@ Do make Backups of your data before using this program. I'm not responseable for
 Images have a maximal size of 4000x4000. With ARGB colors every image can store at most 64MByte. Larger files are split up in parts.
 Folder structures in the original files are not present in the image representation, however they are restored at the decoding step.
 
-The entire file system structure is saved partially encrypted in the index<x>.png files. When opening an existing file system make sure the index0.png exists.
-After encoding some files you can delete the data files(<a>.<b>.<c>.png or <a>.<b>._.png) and still add new files to your indexing structure.
+The entire file system structure is saved partially encrypted in the indexX.png files. When opening an existing file system make sure the index0.png exists.
+After encoding some files you can delete the data files(a.b.c.png or a.b._.png) and still add new files to your indexing structure.
 In practice you should consider uploading your data files before deleting them. This enables you to encode your files in batches.
 
 The used format should result in no data loss when using certain image based cloud solutions.
