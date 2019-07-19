@@ -1,6 +1,7 @@
 source
 target
 result
+test
 .*
 bin
 jre

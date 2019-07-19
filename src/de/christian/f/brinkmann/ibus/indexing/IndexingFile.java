@@ -31,4 +31,12 @@ public class IndexingFile extends IndexingEntry {
 		return collsionCount;
 	}
 
+	public void setPaddingAndOverhead(int[] clone) {
+		paddingAndOverhead = clone;
+	}
+
+	public void setSize(long size2) {
+		size = size2;
+	}
+
 }

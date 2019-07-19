@@ -6,36 +6,17 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+
+import de.christian.f.brinkmann.ibus.indexing.IndexingDir;
+import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
 
 public class Encoder {
 
-	// @formatter:off
-		// [4 byte: empty Bytes] [4byte: amount of indicies]
-		// [4 Byte: "a" Current folder name size][a Byte: Current folder name]
-		// [4 Byte: next index file index number]
-		// ----- [4 Byte: "b" Next Index file name size][b Byte: Next Index file name]
-		// 
-		// ----- [1 Byte: x_i is folder or file]
-		// [4 Byte: "x_i" name length]
-		// [x_i Bytes: Name of x_i][4 Byte: Name Hash Int(Java Impl)]
-		// [4 Byte: Name Hash Number/Count (usually 0), but needed for collision, -1 for folder]
-		// [8 Byte: File size]
-		// [4 Byte: amount of file parts, 0 for folder]
-		// [4 Byte: x_j file j padding] [4 Byte: x_j file j overhead]
-		// @formatter:on
-
-	// int setSize = 4+4+4+a+b+ n*(4+x+4+4+4+ m*(4+4));
-
-	private static int indexFileindex = 0;
-	static final HashMap<Integer, List<String>> indices = new HashMap<Integer, List<String>>();
-
 	static int getMaxDataSize() {
 		if (Crypto.isEncryptionActivated()) {
-			return 4000 * 4000 * 4 - 4; // -4 for aes
+			return Main.maxSize * Main.maxSize * 4 - 4; // -4 for aes
 		}
-		return 4000 * 4000 * 4;
+		return Main.maxSize * Main.maxSize * 4;
 	}
 
 	private static int getNextAESSize(long totalSize) {
@@ -46,10 +27,13 @@ public class Encoder {
 		}
 	}
 
-	static Integer[] encodeFile(File source, File targetDir, int recursionDepth, int collisions) {
+	static IndexingFile encodeFile(IndexingDir parent, File source, File targetDir, int collisions) {
 		ArrayList<Integer> res = new ArrayList<Integer>();
 		if (source.exists()) {
 			Main.sizeInBytes += source.length();
+			if (Metric.active != null) {
+				Metric.active.addSize(source.length());
+			}
 			if (source.length() > getMaxDataSize()) {
 				try {
 					FileInputStream fin = new FileInputStream(source);
@@ -60,15 +44,15 @@ public class Encoder {
 						int size;
 						int totalSize = getMaxDataSize();
 						if (source.length() - index == getMaxDataSize()) {
-							size = 4000;
+							size = Main.maxSize;
 							overheadBytes = -1;
 							fileContent = new byte[getMaxDataSize()];
-							paddingBytes = 4000 * 4000 * 4 - getMaxDataSize();
+							paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
 						} else if (source.length() - index > getMaxDataSize()) {
-							size = 4000;
+							size = Main.maxSize;
 							overheadBytes = 0;
 							fileContent = new byte[getMaxDataSize()];
-							paddingBytes = 4000 * 4000 * 4 - getMaxDataSize();
+							paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
 						} else {
 							totalSize = getNextAESSize(source.length() - index);
 							size = (int) Math.sqrt(totalSize / 4);
@@ -91,23 +75,9 @@ public class Encoder {
 							data = fileContent;
 						}
 
-						String path = "";
-						if (!Main.indexing) {
-							File f = source.getParentFile();
-							for (int i = 0; i < recursionDepth; i++) {
-								path = "." + f.getName() + path;
-								f = f.getParentFile();
-							}
-						}
-						File t = null;
-						if (Main.indexing) {
-							t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
-							res.add(paddingBytes);
-							res.add(overheadBytes);
-						} else {
-							t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + (paddingBytes) + "." + (overheadBytes)
-									+ "." + (index / getMaxDataSize()));
-						}
+						File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
+						res.add(paddingBytes);
+						res.add(overheadBytes);
 						BufferedImage image = ImageCreator.createImage(size, data);
 						FileIO.writeImageToPNG(image, t);
 					}
@@ -145,44 +115,61 @@ public class Encoder {
 				if (size * size * 4 == totalSize) {
 					dataCopy = encrypted;
 				} else {
+					if (Metric.active != null) {
+						Metric.active.startCopying();
+					}
 					dataCopy = new byte[size * size * 4];
 					for (int i = 0; i < encrypted.length; i++) {
 						dataCopy[i] = encrypted[i];
 					}
-				}
-				int paddingBytes = encrypted.length - data.length;
-				String path = "";
-				if (!Main.indexing) {
-					File f = source.getParentFile();
-					for (int i = 0; i < recursionDepth; i++) {
-						path = "." + f.getName() + path;
-						f = f.getParentFile();
+					if (Metric.active != null) {
+						Metric.active.endCopying();
 					}
 				}
-				File t;
-				if (Main.indexing) {
-					t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._");
-					res.add(paddingBytes);
-					int overheadBytes = (size * size * 4) - encrypted.length;
-					res.add(overheadBytes);
-				} else {
-					t = new File(targetDir, source.getName() + path + "." + recursionDepth + "." + paddingBytes + "."
-							+ ((size * size * 4) - encrypted.length) + "._");
-				}
+				int paddingBytes = encrypted.length - data.length;
+				File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._");
+				res.add(paddingBytes);
+				int overheadBytes = (size * size * 4) - encrypted.length;
+				res.add(overheadBytes);
 				BufferedImage image = ImageCreator.createImage(size, dataCopy);
 				FileIO.writeImageToPNG(image, t);
 			}
-			return res.toArray(new Integer[res.size()]);
+			int[] paddingAndOverhead = new int[res.size()];
+			for (int i = 0; i < res.size(); i++) {
+				paddingAndOverhead[i] = res.get(i);
+			}
+			IndexingFile indf = new IndexingFile(parent, source.getName(), source.getName().hashCode(), collisions, paddingAndOverhead,
+					source.length());
+			return indf;
 		} else {
 			System.out.println("Doesn't exist: " + source.getAbsolutePath());
 		}
 		return null;
 	}
 
+	public static void encodeFile(File toEncode, File sourcePath, IndexingDir parent) {
+		if (toEncode.isDirectory()) {
+			IndexingDir sub = new IndexingDir(parent, toEncode.getName(), Main.getAndUseNextFreeIndex());
+			FileSystemFunctions.saveIndexing(sourcePath, sub);
+			parent.getSubFiles().add(sub);
+			FileSystemFunctions.saveIndexing(sourcePath, parent);
+			for (File f : toEncode.listFiles()) {
+				encodeFile(f, sourcePath, sub);
+			}
+		} else {
+			int collisions = Main.getFreeHashCollisionNumber(toEncode.getName().hashCode());
+			Main.addHashCollisionNumber(toEncode.getName().hashCode(), collisions);
+			parent.getSubFiles().add(Encoder.encodeFile(parent, toEncode, sourcePath, collisions));
+			FileSystemFunctions.saveIndexing(sourcePath, parent);
+		}
+	}
+
+	// @formatter:off
+	/*
 	static void encodeDirectoryAlpha(File sourceDir, File targetDir) {
 		encodeDirectory(sourceDir, targetDir, 0);
 	}
-
+	
 	private static int encodeDirectory(File currentDir, File targetDir, int depth) {
 		if (currentDir.exists()) {
 			// final HashMap<String, Integer> indicesOfSubfolders = new
@@ -293,80 +280,7 @@ public class Encoder {
 
 		}
 		return -1;
-	}
-
-	private static String byteToHumanString(byte[] array) {
-		String text = "";
-		for (int i = 0; i < array.length; i++) {
-			text += " " + i + ":" + String.format("%03d", array[i]) + "=" + bytetoHumanReadable(array[i]);
-		}
-		return text;
-	}
-
-	private static String bytetoHumanReadable(byte b) {
-		char[] chars = new char[8];
-		for (int i = 0; i < 8; i++) {
-			chars[i] = (char) ('0' + ((b & (0b1 << (7 - i))) >> (7 - i)));
-		}
-		return new String(chars);
-	}
-
-	private static byte[] writeCurrentIndexFile(int nextIndex, int lastEntryWritten, byte[] indiceBytes, byte[] header, int entries) {
-		byte[] b = new byte[4];
-		writeIntAt(nextIndex, b, 0);
-		byte[] n = append(append(header, b), indiceBytes);
-		writeIntAt(entries - lastEntryWritten, n, 4); // Amount of indices
-		return n;
-	}
-
-	private static void writeIndexFilex(File targetDir, int index, byte[] content) {
-
-		System.out.println("Print to File[" + index + "]: " + byteToHumanString(content));
-		int size = (int) Math.sqrt(content.length / 4);
-		byte[] dataCopy;
-		if (size * size * 4 < content.length) {
-			size++;
-		}
-		if (size < Main.minSize) {
-			size = Main.minSize;
-		}
-		if (size * size * 4 == content.length) {
-			dataCopy = content;
-		} else {
-			dataCopy = new byte[size * size * 4];
-			for (int i = 0; i < content.length; i++) {
-				dataCopy[i] = content[i];
-			}
-		}
-
-		writeIntAt(dataCopy.length - content.length, dataCopy, 0);
-		BufferedImage image = ImageCreator.createImage(size, dataCopy);
-		FileIO.writeImageToPNG(image, new File(targetDir, "index." + index));
-
-	}
-
-	private static void writeByteArrayAt(byte[] toWrite, byte[] target, int targetIndex) {
-		for (int i = 0; i < toWrite.length; i++) {
-			target[targetIndex + i] = toWrite[i];
-		}
-	}
-
-	private static void writeIntAt(int toWrite, byte[] target, int targetIndex) {
-		target[targetIndex] = (byte) (toWrite >> 24);
-		target[targetIndex + 1] = (byte) ((toWrite >> 16) & 0b11111111);
-		target[targetIndex + 2] = (byte) ((toWrite >> 8) & 0b11111111);
-		target[targetIndex + 3] = (byte) (toWrite & 0b11111111);
-	}
-
-	private static byte[] append(byte[] a, byte[] b) {
-		byte[] res = new byte[a.length + b.length];
-		for (int i = 0; i < a.length; i++) {
-			res[i] = a[i];
-		}
-		for (int i = 0; i < b.length; i++) {
-			res[a.length + i] = b[i];
-		}
-		return res;
-	}
+	}*/
+	// @formatter:on
 
 }

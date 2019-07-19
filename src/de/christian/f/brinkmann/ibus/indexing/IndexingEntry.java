@@ -1,6 +1,6 @@
 package de.christian.f.brinkmann.ibus.indexing;
 
-public class IndexingEntry {
+public abstract class IndexingEntry {
 
 	private String name;
 	private IndexingDir parent;

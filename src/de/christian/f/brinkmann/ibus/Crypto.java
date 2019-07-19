@@ -17,16 +17,29 @@ public class Crypto {
 	}
 
 	public static byte[] encrypt(byte[] data) throws Exception {
+		if (Metric.active != null){
+			Metric.active.startAES();
+		}
 		Cipher c = Cipher.getInstance(ALGO);
 		c.init(Cipher.ENCRYPT_MODE, key);
-		return c.doFinal(data);
+		byte[] d = c.doFinal(data);
+		if (Metric.active != null){
+			Metric.active.endAES();
+		}
+		return d;
 	}
 
 	public static byte[] decrypt(byte[] encryptedData) throws Exception {
+		if (Metric.active != null){
+			Metric.active.startAES();
+		}
 		Cipher c = Cipher.getInstance(ALGO);
 		c.init(Cipher.DECRYPT_MODE, key);
-		return c.doFinal(encryptedData);
-
+		byte[] d = c.doFinal(encryptedData);
+		if (Metric.active != null){
+			Metric.active.endAES();
+		}
+		return d;
 	}
 
 	static void setKey(byte[] newKey) throws Exception {

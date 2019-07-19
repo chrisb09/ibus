@@ -2,9 +2,6 @@ package de.christian.f.brinkmann.ibus;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
@@ -14,6 +11,93 @@ import de.christian.f.brinkmann.ibus.indexing.IndexingEntry;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
 
 public class Decoder {
+
+	static void decodeEntry(IndexingEntry toDecode, File targetDir, File sourceDir) {
+		if (toDecode instanceof IndexingFile) {
+			IndexingFile file = (IndexingFile) toDecode;
+			Main.sizeInBytes += file.getSize();
+			if (Metric.active != null) {
+				Metric.active.addSize(file.getSize());
+			}
+			File t = new File(targetDir, file.getName());
+			if (file.getPaddingAndOverhead().length == 2) {
+				// one part
+				try {
+					int emptyB = file.getPaddingAndOverhead()[1];
+					File f = new File(sourceDir, file.getHashId() + "." + file.getCollsionCount() + "._.png");
+					byte[] data = ImageReader.readImage(ImageIO.read(f));
+					if (Metric.active != null) {
+						Metric.active.startCopying();
+					}
+					byte[] dataCopy = new byte[data.length - emptyB];
+					for (int i = 0; i < dataCopy.length; i++) {
+						dataCopy[i] = data[i];
+					}
+					if (Metric.active != null) {
+						Metric.active.endCopying();
+					}
+					if (!Crypto.isEncryptionActivated()) {
+						System.out.println("Can't work without encryption.");
+						return;
+					}
+					dataCopy = Crypto.decrypt(dataCopy);
+					FileIO.writeFileAsBytes(t, dataCopy);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			} else {
+				// multiple parts
+				try {
+					for (int i = 0; i < file.getPaddingAndOverhead().length / 2; i++) {
+						File f = new File(sourceDir, file.getHashId() + "." + file.getCollsionCount() + "." + i + ".png");
+						byte[] data = ImageReader.readImage(ImageIO.read(f));
+						int emptyB = file.getPaddingAndOverhead()[i * 2 + 1];
+						byte[] dataCopy;
+						if (i != file.getPaddingAndOverhead().length / 2 - 1) {
+							dataCopy = data;
+						} else {
+							int ignoreBytes = emptyB;
+							if (ignoreBytes == -1) {
+								ignoreBytes = 0;
+							}
+							if (Metric.active != null) {
+								Metric.active.startCopying();
+							}
+							dataCopy = new byte[data.length - ignoreBytes];
+							for (int j = 0; j < dataCopy.length; j++) {
+								dataCopy[j] = data[j];
+							}
+							if (Metric.active != null) {
+								Metric.active.endCopying();
+							}
+						}
+						if (!Crypto.isEncryptionActivated()) {
+							System.out.println("Can't work without encryption.");
+							return;
+						}
+						try {
+							dataCopy = Crypto.decrypt(dataCopy);
+						} catch (Exception e) {
+							e.printStackTrace();
+							return;
+						}
+						FileIO.appendFileAsBytes(t, dataCopy);
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		} else {
+			IndexingDir dir = (IndexingDir) toDecode;
+			File file = new File(targetDir, dir.getName());
+			if (!file.exists()) {
+				file.mkdirs();
+			}
+			for (IndexingEntry en : dir.getSubFiles()) {
+				decodeEntry(en, file, sourceDir);
+			}
+		}
+	}
 
 	static File[] decodeFile(File source, File targetDir) {
 		Main.sizeInBytes += source.length();
@@ -269,12 +353,7 @@ public class Decoder {
 	}
 
 	static void decodeDirectory(File sourceDir, File targetDir) {
-		if (Main.indexing) {
-			decodeDirWithIndexing(sourceDir, targetDir);
-		} else {
-			decodeDirWithoutIndexing(sourceDir, targetDir);
-		}
-
+		decodeDirWithIndexing(sourceDir, targetDir);
 	}
 
 	private static void decodeDirWithIndexing(File sourceDir, File targetDir) {
@@ -321,146 +400,14 @@ public class Decoder {
 
 	private static void printIndexingToLog(IndexingDir rootDir) {
 		System.out.println("\nroot: ");
-		for (String s : printIndexingStructure(rootDir, 1)) {
+		for (String s : FileSystemFunctions.printIndexingStructure(rootDir, 1, Integer.MAX_VALUE)) {
 			System.out.println(s);
 		}
 	}
 
-	private static ArrayList<String> printIndexingStructure(IndexingDir dir, int depth) {
-		ArrayList<String> text = new ArrayList<String>();
-
-		String pre = "";
-		int w = 5;
-		for (int i = 0; i < depth * w; i++) {
-			if (i % w == 0) {
-				pre += "|";
-			} else {
-				pre += " ";
-			}
-		}
-
-		for (IndexingEntry en : dir.getSubFiles()) {
-			if (en instanceof IndexingFile) {
-				IndexingFile f = (IndexingFile) en;
-				text.add(pre + en.getName() + " <" + f.getHashId() + ":" + f.getCollsionCount() + "> @{" + Tool.readableFileSize(f.getSize())
-						+ "}   " + Arrays.toString(f.getPaddingAndOverhead()) + "");
-			} else if (en instanceof IndexingDir) {
-				IndexingDir d = (IndexingDir) en;
-				text.add(pre + en.getName() + ":");
-				text.addAll(printIndexingStructure(d, depth + 1));
-			} else {
-				text.add(pre + en.getName() + "!!!");
-			}
-		}
-
-		return text;
-	}
-
 	private static IndexingDir loadIndexing(File sourcePath) {
-		IndexingDir root = loadIndexing(sourcePath, 0, null, null);
+		IndexingDir root = FileSystemFunctions.loadIndexing(sourcePath, 0, null, null);
 		return root;
-	}
-
-	private static IndexingDir loadIndexing(File sourceDir, int index, IndexingDir parent, IndexingDir originPart) {
-		try {
-			File indexFile = new File(sourceDir, "index." + index + ".png");
-			byte[] rawData = ImageReader.readImage(ImageIO.read(indexFile));
-			if (Main.delete) {
-				indexFile.delete();
-			}
-			ByteBuffer buffer = ByteBuffer.wrap(rawData);
-			@SuppressWarnings("unused")
-			int emptyBytes = buffer.getInt();
-			int amountOfEntries = buffer.getInt();
-			int nameSize = buffer.getInt();
-			String name = new String(getByteArray(buffer, nameSize));
-			if (Crypto.isEncryptionActivated()) {
-				try {
-					name = Crypto.decryptString(name);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-			int nextIndex = buffer.getInt();
-
-			IndexingDir dir;
-			if (originPart == null) {
-				// Either index file is not split or first part
-				dir = new IndexingDir(parent, name, index);
-			} else {
-				// index file is part of multiple index files that describe one
-				// dir
-				dir = originPart;
-				dir.addId(index);
-			}
-
-			for (int i = 0; i < amountOfEntries; i++) {
-				int entryNameLength = buffer.getInt();
-				String entryName = new String(getByteArray(buffer, entryNameLength));
-				if (Crypto.isEncryptionActivated()) {
-					entryName = Crypto.decryptString(entryName);
-				}
-				int entryId = buffer.getInt();
-				int entryCollisionCount = buffer.getInt();
-
-				long fileSize = buffer.getLong();
-
-				int amountOfFileParts = buffer.getInt();
-				int[] paddingAndOverhead = new int[2 * amountOfFileParts];
-
-				for (int j = 0; j < paddingAndOverhead.length; j++) {
-					paddingAndOverhead[j] = buffer.getInt();
-				}
-
-				if (entryCollisionCount == -1) {
-					// Directory
-					dir.getSubFiles().add(loadIndexing(sourceDir, entryId, dir, null));
-				} else {
-					// File
-					dir.getSubFiles().add(new IndexingFile(dir, entryName, entryId, entryCollisionCount, paddingAndOverhead, fileSize));
-				}
-			}
-
-			if (nextIndex != -1) {
-				loadIndexing(sourceDir, nextIndex, parent, dir);
-			}
-
-			return dir;
-
-		} catch (IOException ex) {
-			ex.printStackTrace();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
-
-	private static byte[] getByteArray(ByteBuffer buffer, int nameSize) {
-		byte[] array = new byte[nameSize];
-		for (int i = 0; i < nameSize; i++) {
-			array[i] = buffer.get();
-		}
-		return array;
-	}
-
-	private static void decodeDirWithoutIndexing(File sourceDir, File targetDir) {
-		if (sourceDir.exists()) {
-			for (File f : sourceDir.listFiles()) {
-				if (f.isDirectory() == false) {
-					try {
-						File[] files = decodeFile(f, targetDir);
-						if (Main.delete && files != null) {
-							for (File file : files) {
-								file.delete();
-							}
-						}
-					} catch (Exception ex) {
-						ex.printStackTrace();
-					}
-				}
-			}
-		}
 	}
 
 }
