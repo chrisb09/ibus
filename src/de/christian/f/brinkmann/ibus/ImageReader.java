@@ -5,7 +5,7 @@ import java.awt.image.BufferedImage;
 public class ImageReader {
 
 	public static byte[] readImage(BufferedImage image) {
-		if (Metric.active!=null){
+		if (Metric.active != null) {
 			Metric.active.startLoading();
 		}
 		byte[] data = new byte[4 * image.getWidth() * image.getHeight()];
@@ -16,7 +16,7 @@ public class ImageReader {
 			data[i + 2] = (byte) ((rgb >> 8) & 0b11111111);
 			data[i + 3] = (byte) (rgb & 0b11111111);
 		}
-		if (Metric.active!=null){
+		if (Metric.active != null) {
 			Metric.active.endLoading();
 		}
 		return data;

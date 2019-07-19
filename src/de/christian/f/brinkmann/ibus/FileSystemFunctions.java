@@ -127,7 +127,7 @@ public class FileSystemFunctions {
 			writeIntAt(previousIndex, data, 12 + nameAsBytes.length);
 			File indexFile = new File(sourceDir, "index." + currentIndex + "");
 			int size = Math.max((int) Math.ceil(Math.sqrt(data.length / 4)), 256);
-			FileIO.writeImageToPNG(ImageCreator.createImage(size, data), indexFile);
+			Main.encoder.createImage(indexFile, size, data);
 			previousIndex = currentIndex;
 		}
 

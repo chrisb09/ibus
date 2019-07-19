@@ -13,6 +13,8 @@ import java.util.regex.Pattern;
 import de.christian.f.brinkmann.ibus.indexing.IndexingDir;
 import de.christian.f.brinkmann.ibus.indexing.IndexingEntry;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
+import de.christian.f.brinkmann.ibus.pngenc.ClassicImageIOEncoder;
+import de.christian.f.brinkmann.ibus.pngenc.PngEncoder;
 
 public class Main {
 
@@ -27,6 +29,7 @@ public class Main {
 	static File sourcePath;
 	private static boolean[] usedIndices;
 	private static HashMap<Integer, Set<Integer>> hashCollisions = new HashMap<Integer, Set<Integer>>();
+	public static PngEncoder encoder = new ClassicImageIOEncoder();
 
 	public static void main(String[] args) {
 
@@ -50,6 +53,12 @@ public class Main {
 			}
 			if (args[i].toLowerCase().startsWith("--key")) {
 				setKey(args[i].substring(6, args[i].length()));
+			}
+			if (args[i].toLowerCase().startsWith("--enc")) {
+				String n = args[i].substring(6, args[i].length());
+				if (n.equalsIgnoreCase("classic")) {
+					encoder = new ClassicImageIOEncoder();
+				}
 			}
 		}
 

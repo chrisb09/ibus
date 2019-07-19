@@ -1,6 +1,5 @@
 package de.christian.f.brinkmann.ibus;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -78,8 +77,7 @@ public class Encoder {
 						File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
 						res.add(paddingBytes);
 						res.add(overheadBytes);
-						BufferedImage image = ImageCreator.createImage(size, data);
-						FileIO.writeImageToPNG(image, t);
+						Main.encoder.createImage(t, size, data);
 					}
 					fin.close();
 				} catch (FileNotFoundException e) {
@@ -131,8 +129,7 @@ public class Encoder {
 				res.add(paddingBytes);
 				int overheadBytes = (size * size * 4) - encrypted.length;
 				res.add(overheadBytes);
-				BufferedImage image = ImageCreator.createImage(size, dataCopy);
-				FileIO.writeImageToPNG(image, t);
+				Main.encoder.createImage(t, size, dataCopy);
 			}
 			int[] paddingAndOverhead = new int[res.size()];
 			for (int i = 0; i < res.size(); i++) {
@@ -163,124 +160,5 @@ public class Encoder {
 			FileSystemFunctions.saveIndexing(sourcePath, parent);
 		}
 	}
-
-	// @formatter:off
-	/*
-	static void encodeDirectoryAlpha(File sourceDir, File targetDir) {
-		encodeDirectory(sourceDir, targetDir, 0);
-	}
-	
-	private static int encodeDirectory(File currentDir, File targetDir, int depth) {
-		if (currentDir.exists()) {
-			// final HashMap<String, Integer> indicesOfSubfolders = new
-			// HashMap<String, Integer>();
-
-			byte[] indiceBytes = new byte[0];
-			byte[] a = null;
-			try {
-				a = (depth != 0 ? (Crypto.isEncryptionActivated() ? Crypto.encryptString(currentDir.getName()) : currentDir.getName()) : "").getBytes();
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-			byte[] header = new byte[4 + 4 + 4 + a.length];
-			writeIntAt(a.length, header, 8);
-			writeByteArrayAt(a, header, 12);
-			int entries = 0;
-			int lastEntryWritten = 0;
-
-			int firstIndex = indexFileindex;
-			int localIndex = indexFileindex;
-			indexFileindex++;
-
-			for (File f : currentDir.listFiles()) {
-				int hash = f.getName().hashCode();
-				if (indices.containsKey(hash)) {
-					indices.get(hash).add(f.getName());
-				} else {
-					List<String> list = new ArrayList<String>();
-					list.add(f.getName());
-					indices.put(hash, list);
-				}
-				
-				byte[] name;
-				if (Crypto.isEncryptionActivated()) {
-					try {
-						name = Crypto.encryptString(f.getName()).getBytes();
-					} catch (Exception e) {
-						name = f.getName().getBytes();
-						e.printStackTrace();
-					}
-				}else{
-					name = f.getName().getBytes();
-				}
-				
-				byte[] t = new byte[4 + name.length + 4 + 4 + 8 + 4];
-
-				if (Main.indexing) {
-					entries++;
-					writeIntAt(name.length, t, 0);
-					writeByteArrayAt(name, t, 4);
-				}
-
-				if (f.isDirectory()) {
-					int subIndex = encodeDirectory(f, targetDir, depth + 1);
-
-					if (Main.indexing) {
-						writeIntAt(subIndex, t, 4 + name.length);
-						writeIntAt(-1, t, 8 + name.length);
-						writeIntAt(0, t, 12 + name.length);
-						writeIntAt(0, t, 16 + name.length);
-						writeIntAt(0, t, 20 + name.length);
-					}
-					if (Main.delete) {
-						f.delete();
-					}
-				} else {
-					Integer[] res = encodeFile(f, targetDir, depth, indices.get(f.getName().hashCode()).size() - 1);
-					if (Main.indexing) {
-						writeIntAt(f.getName().hashCode(), t, 4 + name.length);
-						writeIntAt(indices.get(f.getName().hashCode()).size() - 1, t, 8 + name.length);
-						writeIntAt((int) (f.length() >>  32), t, 12 + name.length);
-						writeIntAt((int) (f.length() & (0b11111111111111111111111111111111)), t, 16 + name.length);
-						writeIntAt(res.length / 2, t, 20 + name.length);
-						t = append(t, new byte[res.length * 4]);
-						for (int i = 0; i < res.length; i++) {
-							writeIntAt(res[i], t, 24 + name.length + i * 4);
-						}
-					}
-				}
-				if (Main.delete) {
-					f.delete();
-				}
-
-				if (Main.indexing) {
-					if (indiceBytes.length + t.length > getMaxDataSize() - 256) {
-						byte[] n = writeCurrentIndexFile(indexFileindex, lastEntryWritten, indiceBytes, header, entries);
-						writeIndexFilex(targetDir, localIndex, n);
-
-						indiceBytes = t;
-						lastEntryWritten = entries;
-						localIndex = indexFileindex;
-						indexFileindex++;
-					} else {
-						indiceBytes = append(indiceBytes, t);
-					}
-				}
-			}
-
-			if (Main.indexing) {
-				if (Main.debug) {
-					System.out.print("Name=" + (depth != 0 ? currentDir.getName() : "") + " ");
-				}
-				byte[] n = writeCurrentIndexFile(-1, lastEntryWritten, indiceBytes, header, entries);
-				writeIndexFilex(targetDir, localIndex, n);
-				return firstIndex;
-			}
-
-		}
-		return -1;
-	}*/
-	// @formatter:on
 
 }
