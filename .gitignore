@@ -2,8 +2,10 @@ source
 target
 result
 test
+lib
 .*
 bin
 jre
 *.class
 !.gitignore
+bench.txt

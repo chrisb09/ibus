@@ -27,7 +27,7 @@ public class FileIO {
 		return data;
 	}
 
-	static boolean writeFileAsBytes(File file, byte[] data) {
+	public static boolean writeFileAsBytes(File file, byte[] data) {
 		if (Metric.active != null){
 			Metric.active.startWriting();
 		}

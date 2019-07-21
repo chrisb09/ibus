@@ -5,11 +5,19 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import de.christian.f.brinkmann.ibus.indexing.IndexingDir;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
 
 public class Encoder {
+
+	static Thread mainEncodingThread;
+	static MainEncodingRunnable mainEncodingRunnable;
+
+	static Long sleeptime = 10l;
 
 	static int getMaxDataSize() {
 		if (Crypto.isEncryptionActivated()) {
@@ -27,121 +35,131 @@ public class Encoder {
 	}
 
 	static IndexingFile encodeFile(IndexingDir parent, File source, File targetDir, int collisions) {
-		ArrayList<Integer> res = new ArrayList<Integer>();
-		if (source.exists()) {
-			Main.sizeInBytes += source.length();
-			if (Metric.active != null) {
-				Metric.active.addSize(source.length());
-			}
-			if (source.length() > getMaxDataSize()) {
-				try {
-					FileInputStream fin = new FileInputStream(source);
-					for (int index = 0; index < source.length(); index += getMaxDataSize()) {
-						byte[] fileContent;
-						int overheadBytes;
-						int paddingBytes;
-						int size;
-						int totalSize = getMaxDataSize();
-						if (source.length() - index == getMaxDataSize()) {
-							size = Main.maxSize;
-							overheadBytes = -1;
-							fileContent = new byte[getMaxDataSize()];
-							paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
-						} else if (source.length() - index > getMaxDataSize()) {
-							size = Main.maxSize;
-							overheadBytes = 0;
-							fileContent = new byte[getMaxDataSize()];
-							paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
-						} else {
-							totalSize = getNextAESSize(source.length() - index);
-							size = (int) Math.sqrt(totalSize / 4);
-							if (size * size * 4 < totalSize) {
-								size++;
-							}
-							if (size < Main.minSize) {
-								size = Main.minSize;
-							}
-							fileContent = new byte[(int) (source.length() - index)];
-							overheadBytes = (size * size * 4) - (int) (totalSize);
-							paddingBytes = totalSize - fileContent.length;
-							index += fileContent.length; // In case 3996-3999
-						}
-						fin.read(fileContent);
-						byte[] data;
-						if (Crypto.isEncryptionActivated()) {
-							data = Crypto.encrypt(fileContent);
-						} else {
-							data = fileContent;
-						}
+		if (!source.exists()) {
+			return null;
+		}
+		if (Metric.active != null) {
+			Metric.active.addSize(source.length());
+		}
+		IndexingFile indf = new IndexingFile(parent, source.getName(), source.getName().hashCode(), collisions, new int[0], source.length());
+		mainEncodingRunnable.addQueue(new EncoderQueueEntry(indf, parent, source, targetDir, collisions));
+		synchronized (mainEncodingRunnable) {
+			mainEncodingRunnable.notify();
+		}
+		return indf;
+	}
 
-						File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
-						res.add(paddingBytes);
-						res.add(overheadBytes);
-						Main.encoder.createImage(t, size, data);
+	static void pEncodeFile(IndexingFile indf, IndexingDir parent, File source, File targetDir, int collisions) {
+		ArrayList<Integer> res = new ArrayList<Integer>();
+		Main.sizeInBytes += source.length();
+		if (source.length() > getMaxDataSize()) {
+			try {
+				FileInputStream fin = new FileInputStream(source);
+				for (int index = 0; index < source.length(); index += getMaxDataSize()) {
+					byte[] fileContent;
+					int overheadBytes;
+					int paddingBytes;
+					int size;
+					int totalSize = getMaxDataSize();
+					if (source.length() - index == getMaxDataSize()) {
+						size = Main.maxSize;
+						overheadBytes = -1;
+						fileContent = new byte[getMaxDataSize()];
+						paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
+					} else if (source.length() - index > getMaxDataSize()) {
+						size = Main.maxSize;
+						overheadBytes = 0;
+						fileContent = new byte[getMaxDataSize()];
+						paddingBytes = Main.maxSize * Main.maxSize * 4 - getMaxDataSize();
+					} else {
+						totalSize = getNextAESSize(source.length() - index);
+						size = (int) Math.sqrt(totalSize / 4);
+						if (size * size * 4 < totalSize) {
+							size++;
+						}
+						if (size < Main.minSize) {
+							size = Main.minSize;
+						}
+						fileContent = new byte[(int) (source.length() - index)];
+						overheadBytes = (size * size * 4) - (int) (totalSize);
+						paddingBytes = totalSize - fileContent.length;
+						index += fileContent.length; // In case 3996-3999
 					}
-					fin.close();
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
+					fin.read(fileContent);
+					byte[] data;
+					if (Crypto.isEncryptionActivated()) {
+						data = Crypto.encrypt(fileContent);
+					} else {
+						data = fileContent;
+					}
+
+					File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
+					res.add(paddingBytes);
+					res.add(overheadBytes);
+					Main.encoder.createImage(t, size, data);
+					Metric.active.addCurrentSize(fileContent.length);
+				}
+				fin.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+
+			// TODO: !!!!
+			byte[] data = FileIO.readFileAsBytes(source);
+			byte[] encrypted = null;
+			if (Crypto.isEncryptionActivated()) {
+				try {
+					encrypted = Crypto.encrypt(data);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			} else {
-
-				// TODO: !!!!
-				byte[] data = FileIO.readFileAsBytes(source);
-				byte[] encrypted = null;
-				if (Crypto.isEncryptionActivated()) {
-					try {
-						encrypted = Crypto.encrypt(data);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-				} else {
-					encrypted = data;
-				}
-				int totalSize = encrypted.length;
-				int size = (int) Math.sqrt(totalSize / 4);
-				byte[] dataCopy;
-				if (size * size * 4 < totalSize) {
-					size++;
-				}
-				if (size < Main.minSize) {
-					size = Main.minSize;
-				}
-				if (size * size * 4 == totalSize) {
-					dataCopy = encrypted;
-				} else {
-					if (Metric.active != null) {
-						Metric.active.startCopying();
-					}
-					dataCopy = new byte[size * size * 4];
-					for (int i = 0; i < encrypted.length; i++) {
-						dataCopy[i] = encrypted[i];
-					}
-					if (Metric.active != null) {
-						Metric.active.endCopying();
-					}
-				}
-				int paddingBytes = encrypted.length - data.length;
-				File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._");
-				res.add(paddingBytes);
-				int overheadBytes = (size * size * 4) - encrypted.length;
-				res.add(overheadBytes);
-				Main.encoder.createImage(t, size, dataCopy);
+				encrypted = data;
 			}
-			int[] paddingAndOverhead = new int[res.size()];
-			for (int i = 0; i < res.size(); i++) {
-				paddingAndOverhead[i] = res.get(i);
+			int totalSize = encrypted.length;
+			int size = (int) Math.sqrt(totalSize / 4);
+			byte[] dataCopy;
+			if (size * size * 4 < totalSize) {
+				size++;
 			}
-			IndexingFile indf = new IndexingFile(parent, source.getName(), source.getName().hashCode(), collisions, paddingAndOverhead,
-					source.length());
-			return indf;
-		} else {
-			System.out.println("Doesn't exist: " + source.getAbsolutePath());
+			if (size < Main.minSize) {
+				size = Main.minSize;
+			}
+			if (size * size * 4 == totalSize) {
+				dataCopy = encrypted;
+			} else {
+				if (Metric.active != null) {
+					Metric.active.startCopying();
+				}
+				dataCopy = new byte[size * size * 4];
+				for (int i = 0; i < encrypted.length; i++) {
+					dataCopy[i] = encrypted[i];
+				}
+				if (Metric.active != null) {
+					Metric.active.endCopying();
+				}
+			}
+			int paddingBytes = encrypted.length - data.length;
+			File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._");
+			res.add(paddingBytes);
+			int overheadBytes = (size * size * 4) - encrypted.length;
+			res.add(overheadBytes);
+			Main.encoder.createImage(t, size, dataCopy);
+			Metric.active.addCurrentSize(data.length);
 		}
-		return null;
+		int[] paddingAndOverhead = new int[res.size()];
+		for (int i = 0; i < res.size(); i++) {
+			paddingAndOverhead[i] = res.get(i);
+		}
+		// IndexingFile indf = new IndexingFile(parent, source.getName(),
+		// source.getName().hashCode(), collisions, paddingAndOverhead,
+		// source.length());
+		indf.setPaddingAndOverhead(paddingAndOverhead);
 	}
 
 	public static void encodeFile(File toEncode, File sourcePath, IndexingDir parent) {
@@ -159,6 +177,44 @@ public class Encoder {
 			parent.getSubFiles().add(Encoder.encodeFile(parent, toEncode, sourcePath, collisions));
 			FileSystemFunctions.saveIndexing(sourcePath, parent);
 		}
+	}
+
+	public static void startEncodeFile(File sPath, File sourcePath, IndexingDir local) {
+
+		Metric.startMetric();
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("Metric: "+Metric.active.getTempInfo());
+			}
+		}, 8, 8, TimeUnit.SECONDS);
+		
+
+		mainEncodingRunnable = new MainEncodingRunnable();
+		mainEncodingThread = new Thread(mainEncodingRunnable);
+
+		synchronized (mainEncodingRunnable.allQueued) {
+			mainEncodingRunnable.allQueued = false;
+		}
+		
+		mainEncodingThread.start();
+
+		encodeFile(sPath, sourcePath, local);
+
+		synchronized (mainEncodingRunnable.allQueued) {
+			mainEncodingRunnable.allQueued = true;
+		}
+
+		try {
+			mainEncodingThread.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		scheduler.shutdown();
+		System.out.println(Metric.stopMetric());
+
 	}
 
 }

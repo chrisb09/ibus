@@ -14,6 +14,8 @@ import de.christian.f.brinkmann.ibus.indexing.IndexingDir;
 import de.christian.f.brinkmann.ibus.indexing.IndexingEntry;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
 import de.christian.f.brinkmann.ibus.pngenc.ClassicImageIOEncoder;
+import de.christian.f.brinkmann.ibus.pngenc.KeypointPngEncoder;
+import de.christian.f.brinkmann.ibus.pngenc.ObjectplanetPngEncoder;
 import de.christian.f.brinkmann.ibus.pngenc.PngEncoder;
 
 public class Main {
@@ -58,6 +60,15 @@ public class Main {
 				String n = args[i].substring(6, args[i].length());
 				if (n.equalsIgnoreCase("classic")) {
 					encoder = new ClassicImageIOEncoder();
+					System.out.println("Use classic encoder");
+				}
+				if (n.equalsIgnoreCase("keypoint")) {
+					encoder = new KeypointPngEncoder();
+					System.out.println("Use keypoint encoder");
+				}
+				if (n.equalsIgnoreCase("objectplanet")) {
+					encoder = new ObjectplanetPngEncoder();
+					System.out.println("Use objectplanet encoder");
 				}
 			}
 		}
@@ -292,9 +303,9 @@ public class Main {
 					System.out.println("No file found: '" + sPath.getAbsolutePath() + "'");
 					continue;
 				}
-				Metric.startMetric();
-				Encoder.encodeFile(sPath, sourcePath, local);
-				System.out.println(Metric.stopMetric());
+				
+				Encoder.startEncodeFile(sPath, sourcePath, local);
+				
 				System.out.println("Encoding done.");
 				continue;
 			}

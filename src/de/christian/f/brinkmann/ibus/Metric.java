@@ -21,6 +21,7 @@ public class Metric {
 	private long start;
 	private long end;
 	private long size;
+	private Long currentSize = 0l;
 	private long loading;
 	private long loadingT;
 	private long copying;
@@ -98,6 +99,28 @@ public class Metric {
 		return size;
 	}
 
+	public void addCurrentSize(long size) {
+		synchronized (currentSize) {
+			this.currentSize += size;
+		}
+	}
+
+	public long getCurrentSize() {
+		return currentSize;
+	}
+
+	public String getTempInfo() {
+		//@formatter:off
+		return "Progress: "+(getCurrentSize()*100/getSize())+"%"+
+				"     "+(Tool.readableNanoTime(1000000l* getRemainingTime()))+" remaining"+
+				"     "+Tool.readableFileSize(getCurrentSize())+" / "+Tool.readableFileSize(getSize())+
+				"     "+(Encoder.mainEncodingRunnable.scanComplete() ? "scan complete" : "scanning...")+
+				"     time passed: "+Tool.readableNanoTime(1000000l*(System.currentTimeMillis()-start))
+				+"     threads: "+Encoder.mainEncodingRunnable.getUsedThreads()+"/"+Encoder.mainEncodingRunnable.getMaxThreads()
+				+"     queue: "+Encoder.mainEncodingRunnable.getQueueSize();
+		//@formatter:on
+	}
+
 	public String getInfo() {
 		//@formatter:off
 		return "Total: "+Tool.readableFileSize(size)+" in "+Tool.readableNanoTime(1000000l*getTime())+": "+(Tool.readableFileSize(size*1000l/getTime()))+"/s \n"+
@@ -106,6 +129,10 @@ public class Metric {
 				"AES: "+Tool.readableNanoTime(getAES())+" \n"+
 				"Writing: "+Tool.readableNanoTime(getWriting())+" \n";
 		//@formatter:on
+	}
+
+	public long getRemainingTime() {
+		return (long) (((System.currentTimeMillis() - start) * (((getSize() * 1.0) / Math.max(1.0, getCurrentSize())) - 1.0)));
 	}
 
 }
