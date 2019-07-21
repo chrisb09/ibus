@@ -18,6 +18,7 @@ starts the program with key X as encryption/Decryption key. The encrypted data s
 Using an incorrect key for decryption may result in errors. Access to your data is lost when you lose your key.
 Use `--minsize=x` to force images to have dimensions of at least x times x. Default is minsize=256.
 Use `--maxsize=x` to force images to have dimensions of at maximum x times x. Default is maxsize=4000.
+Use `--threads=x` to set the number of threads for encoding.
 
 Do make Backups of your data before using this program. I'm not responseable for any data you might lose.
 
@@ -25,7 +26,8 @@ Do make Backups of your data before using this program. I'm not responseable for
 
 - correct copy and move behaviour
 - increase performance
-- add multi core support
+- add multi core support for decoding
+- fix bugs occuring during encoding
 - add gPhotos automatic up/download
 - add native file system integration
 
