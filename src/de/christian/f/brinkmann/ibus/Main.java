@@ -15,11 +15,11 @@ import de.christian.f.brinkmann.ibus.indexing.IndexingEntry;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
 import de.christian.f.brinkmann.ibus.pngenc.ClassicImageIOEncoder;
 import de.christian.f.brinkmann.ibus.pngenc.KeypointPngEncoder;
-import de.christian.f.brinkmann.ibus.pngenc.ObjectplanetPngEncoder;
 import de.christian.f.brinkmann.ibus.pngenc.PngEncoder;
 
 public class Main {
 
+	static int cores = 0;
 	static boolean delete = false;
 	static long sizeInBytes = 0l;
 	static int minSize = 256;
@@ -53,6 +53,10 @@ public class Main {
 			if (args[i].toLowerCase().startsWith("--debug")) {
 				debug = true;
 			}
+			if (args[i].toLowerCase().startsWith("--threads")) {
+				cores = Integer.parseInt(args[i].substring(10, args[i].length()));
+				System.out.println("Using " + cores + " threads.");
+			}
 			if (args[i].toLowerCase().startsWith("--key")) {
 				setKey(args[i].substring(6, args[i].length()));
 			}
@@ -66,11 +70,12 @@ public class Main {
 					encoder = new KeypointPngEncoder();
 					System.out.println("Use keypoint encoder");
 				}
-				if (n.equalsIgnoreCase("objectplanet")) {
-					encoder = new ObjectplanetPngEncoder();
-					System.out.println("Use objectplanet encoder");
-				}
 			}
+		}
+
+		if (cores == 0) {
+			cores = Runtime.getRuntime().availableProcessors();
+			System.out.println("Found " + cores + " processors, using " + cores + " threads.");
 		}
 
 		usedIndices = new boolean[0];
@@ -87,9 +92,8 @@ public class Main {
 				return;
 			}
 		} else {
-			System.out.println("Creating new FS");
+			System.out.println("Creating new file system");
 			root = new IndexingDir(null, "", 0);
-			System.out.println("root:" + root.getSubFiles());
 		}
 
 		current = root;
@@ -101,17 +105,6 @@ public class Main {
 
 		console();
 
-		/*
-		 * long start = System.currentTimeMillis();
-		 * 
-		 * System.out.println("Operation completed.");
-		 * System.out.println("Time: " + ((System.currentTimeMillis() - start) /
-		 * 1000l) + "s"); System.out.println("Data: " + (sizeInBytes / 1000000l)
-		 * + "Mbyte"); System.out .println("Rate: " +
-		 * (((System.currentTimeMillis() - start) / 1000l) != 0 ? ((sizeInBytes
-		 * * 8 / 1000000l) / ((System.currentTimeMillis() - start) / 1000l)) +
-		 * " Mbit/s" : "-"));
-		 */
 	}
 
 	private static void console() {
@@ -303,9 +296,9 @@ public class Main {
 					System.out.println("No file found: '" + sPath.getAbsolutePath() + "'");
 					continue;
 				}
-				
+
 				Encoder.startEncodeFile(sPath, sourcePath, local);
-				
+
 				System.out.println("Encoding done.");
 				continue;
 			}
@@ -486,8 +479,8 @@ public class Main {
 	}
 
 	private static void printHelp() {
-		System.out.println("Parameter: <path> [--minSize=X] [--key=Y]");
-		System.out.println(" where X is an Integer and Y is a password");
+		System.out.println("Parameter: <path> [--minSize=X] [--key=Y] [--threads=Z]");
+		System.out.println(" where X and Z is are Integer and Y is a password");
 	}
 
 	private static void setKey(String key) {

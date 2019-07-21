@@ -23,6 +23,10 @@ public class EncodingThread extends Thread {
 		}
 	}
 
+	String getInfo() {
+		return entry.getSource().getName() + "(" + Tool.readableFileSize(entry.getSource().length()) + ")";
+	}
+
 	@Override
 	public void run() {
 
@@ -31,7 +35,7 @@ public class EncodingThread extends Thread {
 		while (true) {
 
 			Encoder.pEncodeFile(entry.getIndf(), entry.getParent(), entry.getSource(), entry.getTargetDir(), entry.getCollisions());
-			//Metric.active.addCurrentSize(entry.getSource().length());
+			// Metric.active.addCurrentSize(entry.getSource().length());
 
 			synchronized (threads) {
 				threads.remove(this);

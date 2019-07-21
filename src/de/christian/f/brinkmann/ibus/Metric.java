@@ -115,9 +115,10 @@ public class Metric {
 				"     "+(Tool.readableNanoTime(1000000l* getRemainingTime()))+" remaining"+
 				"     "+Tool.readableFileSize(getCurrentSize())+" / "+Tool.readableFileSize(getSize())+
 				"     "+(Encoder.mainEncodingRunnable.scanComplete() ? "scan complete" : "scanning...")+
-				"     time passed: "+Tool.readableNanoTime(1000000l*(System.currentTimeMillis()-start))
-				+"     threads: "+Encoder.mainEncodingRunnable.getUsedThreads()+"/"+Encoder.mainEncodingRunnable.getMaxThreads()
-				+"     queue: "+Encoder.mainEncodingRunnable.getQueueSize();
+				"     time passed: "+Tool.readableNanoTime(1000000l*(System.currentTimeMillis()-start))+
+				"     threads: "+Encoder.mainEncodingRunnable.getUsedThreads()+"/"+Encoder.mainEncodingRunnable.getMaxThreads()+
+				"     queue: "+Encoder.mainEncodingRunnable.getQueueSize()+
+				"     current: "+Encoder.mainEncodingRunnable.getCurrentFiles();
 		//@formatter:on
 	}
 

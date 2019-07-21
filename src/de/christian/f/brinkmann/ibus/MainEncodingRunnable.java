@@ -11,7 +11,6 @@ public class MainEncodingRunnable implements Runnable {
 
 	Boolean done = false;
 	Boolean allQueued = false;
-	int targetThreadAmount = 8;
 
 	public MainEncodingRunnable() {
 	}
@@ -46,7 +45,7 @@ public class MainEncodingRunnable implements Runnable {
 							}
 						}
 						synchronized (freeThreads) {
-							while (queue.size() > 0 && threads.size() < targetThreadAmount) {
+							while (queue.size() > 0 && threads.size() < Main.cores) {
 								EncodingThread et;
 								if (freeThreads.size() == 0) {
 									et = new EncodingThread();
@@ -91,7 +90,7 @@ public class MainEncodingRunnable implements Runnable {
 	}
 
 	public int getMaxThreads() {
-		return targetThreadAmount;
+		return Main.cores;
 	}
 
 	public int getQueueSize() {
@@ -102,5 +101,17 @@ public class MainEncodingRunnable implements Runnable {
 
 	public boolean scanComplete() {
 		return allQueued;
+	}
+
+	public String getCurrentFiles() {
+		synchronized (threads) {
+			String t = "";
+			for (EncodingThread et : threads) {
+				t += ", " + et.getInfo();
+			}
+			if (t.length() > 2)
+				return t.substring(2);
+			return t;
+		}
 	}
 }
