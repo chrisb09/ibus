@@ -2,6 +2,8 @@ source
 target
 result
 test
+lib
+bench.txt
 .*
 bin
 jre

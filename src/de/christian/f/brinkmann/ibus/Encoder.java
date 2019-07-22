@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import de.christian.f.brinkmann.ibus.indexing.IndexingDir;
 import de.christian.f.brinkmann.ibus.indexing.IndexingFile;
@@ -30,9 +33,6 @@ public class Encoder {
 		ArrayList<Integer> res = new ArrayList<Integer>();
 		if (source.exists()) {
 			Main.sizeInBytes += source.length();
-			if (Metric.active != null) {
-				Metric.active.addSize(source.length());
-			}
 			if (source.length() > getMaxDataSize()) {
 				try {
 					FileInputStream fin = new FileInputStream(source);
@@ -77,6 +77,9 @@ public class Encoder {
 						File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
 						res.add(paddingBytes);
 						res.add(overheadBytes);
+						if (Metric.active != null) {
+							Metric.active.addSize(fileContent.length);
+						}
 						Main.encoder.createImage(t, size, data);
 					}
 					fin.close();
@@ -130,6 +133,9 @@ public class Encoder {
 				int overheadBytes = (size * size * 4) - encrypted.length;
 				res.add(overheadBytes);
 				Main.encoder.createImage(t, size, dataCopy);
+				if (Metric.active != null) {
+					Metric.active.addSize(data.length);
+				}
 			}
 			int[] paddingAndOverhead = new int[res.size()];
 			for (int i = 0; i < res.size(); i++) {
@@ -159,6 +165,24 @@ public class Encoder {
 			parent.getSubFiles().add(Encoder.encodeFile(parent, toEncode, sourcePath, collisions));
 			FileSystemFunctions.saveIndexing(sourcePath, parent);
 		}
+	}
+
+	public static void startEncodeFile(File sPath, File sourcePath, IndexingDir local) {
+
+		Metric.startMetric();
+		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+		scheduler.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("Metric: " + Metric.active.getTempInfo());
+			}
+		}, 8, 8, TimeUnit.SECONDS);
+
+		encodeFile(sPath, sourcePath, local);
+
+		scheduler.shutdown();
+		System.out.println(Metric.stopMetric());
+
 	}
 
 }

@@ -98,6 +98,13 @@ public class Metric {
 		return size;
 	}
 
+	public String getTempInfo() {
+		//@formatter:off
+		return " "+Tool.readableFileSize(getSize())+
+				"     time passed: "+Tool.readableNanoTime(1000000l*(System.currentTimeMillis()-start));
+		//@formatter:on
+	}
+
 	public String getInfo() {
 		//@formatter:off
 		return "Total: "+Tool.readableFileSize(size)+" in "+Tool.readableNanoTime(1000000l*getTime())+": "+(Tool.readableFileSize(size*1000l/getTime()))+"/s \n"+

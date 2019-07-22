@@ -292,10 +292,7 @@ public class Main {
 					System.out.println("No file found: '" + sPath.getAbsolutePath() + "'");
 					continue;
 				}
-				Metric.startMetric();
-				Encoder.encodeFile(sPath, sourcePath, local);
-				System.out.println(Metric.stopMetric());
-				System.out.println("Encoding done.");
+				Encoder.startEncodeFile(sPath, sourcePath, local);
 				continue;
 			}
 			if (command.equalsIgnoreCase("exit") || command.equalsIgnoreCase("quit") || command.equalsIgnoreCase("q")) {
