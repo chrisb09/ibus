@@ -49,7 +49,8 @@ public class Encoder {
 		return indf;
 	}
 
-	static void pEncodeFile(IndexingFile indf, IndexingDir parent, File source, File targetDir, int collisions) {
+	static void pEncodeFile(EncodingThread thread, IndexingFile indf, IndexingDir parent, File source, File targetDir, int collisions) {
+		System.out.println("Encoding File: " + source.getName() + " (" + Tool.readableFileSize(source.length()) + ")");
 		ArrayList<Integer> res = new ArrayList<Integer>();
 		Main.sizeInBytes += source.length();
 		if (source.length() > getMaxDataSize()) {
@@ -93,10 +94,11 @@ public class Encoder {
 						data = fileContent;
 					}
 
-					File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize()));
+					File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "." + (index / getMaxDataSize())+".png");
 					res.add(paddingBytes);
 					res.add(overheadBytes);
 					Main.encoder.createImage(t, size, data);
+					thread.progress += fileContent.length;
 					Metric.active.addCurrentSize(fileContent.length);
 				}
 				fin.close();
@@ -145,11 +147,12 @@ public class Encoder {
 				}
 			}
 			int paddingBytes = encrypted.length - data.length;
-			File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._");
+			File t = new File(targetDir, source.getName().hashCode() + "." + collisions + "._.png");
 			res.add(paddingBytes);
 			int overheadBytes = (size * size * 4) - encrypted.length;
 			res.add(overheadBytes);
 			Main.encoder.createImage(t, size, dataCopy);
+			thread.progress += data.length;
 			Metric.active.addCurrentSize(data.length);
 		}
 		int[] paddingAndOverhead = new int[res.size()];
@@ -160,6 +163,8 @@ public class Encoder {
 		// source.getName().hashCode(), collisions, paddingAndOverhead,
 		// source.length());
 		indf.setPaddingAndOverhead(paddingAndOverhead);
+		System.out.println("Encoding DONE: " + source.getName());
+		//TODO: !!!SAVE INDEXING OF FILES CHANGED
 	}
 
 	public static void encodeFile(File toEncode, File sourcePath, IndexingDir parent) {
@@ -186,10 +191,9 @@ public class Encoder {
 		scheduler.scheduleAtFixedRate(new Runnable() {
 			@Override
 			public void run() {
-				System.out.println("Metric: "+Metric.active.getTempInfo());
+				System.out.println("Metric: " + Metric.active.getTempInfo());
 			}
 		}, 8, 8, TimeUnit.SECONDS);
-		
 
 		mainEncodingRunnable = new MainEncodingRunnable();
 		mainEncodingThread = new Thread(mainEncodingRunnable);
@@ -197,7 +201,7 @@ public class Encoder {
 		synchronized (mainEncodingRunnable.allQueued) {
 			mainEncodingRunnable.allQueued = false;
 		}
-		
+
 		mainEncodingThread.start();
 
 		encodeFile(sPath, sourcePath, local);

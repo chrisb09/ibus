@@ -590,12 +590,11 @@ public class KeypointPngEncoder extends PngEncoder {
 
 	@Override
 	public void createImage(File file, int imageSize, byte[] pixelparts) {
-		File f = new File(file.getAbsolutePath() + ".png");
 		this.setCompressionLevel(1);
 		this.setEncodeAlpha(true);
 		this.setFilter(FILTER_NONE);
 		this.setImage(ImageCreator.createImage(imageSize, pixelparts));
 		byte[] data = this.pngEncode();
-		FileIO.writeFileAsBytes(f, data);
+		FileIO.writeFileAsBytes(file, data);
 	}
 }

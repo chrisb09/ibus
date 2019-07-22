@@ -66,13 +66,13 @@ public class FileIO {
 	}
 
 	public static void writeImageToPNG(RenderedImage image, File file) {
-		File f = new File(file.getAbsolutePath() + ".png");
 		if (Metric.active != null){
 			Metric.active.startWriting();
 		}
 		try {
-			ImageIO.write(image, "png", f);
+			ImageIO.write(image, "png", file);
 		} catch (IOException e) {
+			System.out.println("F: "+file);
 			e.printStackTrace();
 		}
 		if (Metric.active != null){

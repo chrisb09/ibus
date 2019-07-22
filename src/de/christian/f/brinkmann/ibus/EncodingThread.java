@@ -6,6 +6,8 @@ public class EncodingThread extends Thread {
 
 	public boolean running = false;
 
+	long progress = 0l;
+
 	EncoderQueueEntry entry;
 	ArrayList<EncodingThread> threads;
 	ArrayList<EncodingThread> freeThreads;
@@ -24,7 +26,7 @@ public class EncodingThread extends Thread {
 	}
 
 	String getInfo() {
-		return entry.getSource().getName() + "(" + Tool.readableFileSize(entry.getSource().length()) + ")";
+		return entry.getSource().getName() + "(" + Tool.readableFileSize(progress) + " / " + Tool.readableFileSize(entry.getSource().length()) + ")";
 	}
 
 	@Override
@@ -34,7 +36,8 @@ public class EncodingThread extends Thread {
 
 		while (true) {
 
-			Encoder.pEncodeFile(entry.getIndf(), entry.getParent(), entry.getSource(), entry.getTargetDir(), entry.getCollisions());
+			progress = 0l;
+			Encoder.pEncodeFile(this, entry.getIndf(), entry.getParent(), entry.getSource(), entry.getTargetDir(), entry.getCollisions());
 			// Metric.active.addCurrentSize(entry.getSource().length());
 
 			synchronized (threads) {

@@ -125,7 +125,7 @@ public class FileSystemFunctions {
 				dir.getIds().add(currentIndex);
 			}
 			writeIntAt(previousIndex, data, 12 + nameAsBytes.length);
-			File indexFile = new File(sourceDir, "index." + currentIndex + "");
+			File indexFile = new File(sourceDir, "index." + currentIndex + ".png");
 			int size = Math.max((int) Math.ceil(Math.sqrt(data.length / 4)), 256);
 			Main.encoder.createImage(indexFile, size, data);
 			previousIndex = currentIndex;
@@ -376,6 +376,10 @@ public class FileSystemFunctions {
 	}
 
 	public static void delete(IndexingEntry en, File sourcePath) {
+		if (en == null) {
+			System.out.println("Delete null ?");
+			return;
+		}
 		if (en.getParent() == null) {
 			System.out.println("Can't delete root.");
 			return;
