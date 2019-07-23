@@ -36,7 +36,7 @@ public class Encoder {
 			if (source.length() > getMaxDataSize()) {
 				try {
 					FileInputStream fin = new FileInputStream(source);
-					for (int index = 0; index < source.length(); index += getMaxDataSize()) {
+					for (long index = 0; index < source.length(); index += getMaxDataSize()) {
 						byte[] fileContent;
 						int overheadBytes;
 						int paddingBytes;
